@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Rua 3D</title>
 <style>
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#b9c0c8;touch-action:none}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#9fcbea;touch-action:none}
 #game{position:fixed;inset:0;width:100%;height:100%;display:block}
 #look{position:fixed;right:0;top:0;width:68%;height:100%;z-index:5}
 #joy{position:fixed;left:18px;bottom:20px;width:136px;height:136px;border:2px solid #fff8;border-radius:50%;background:#ffffff28;z-index:10}
@@ -15,100 +15,78 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#b9c0c8;tou
 </style>
 </head>
 <body>
-<canvas id="game"></canvas><div id="look"></div><div id="joy"><div id="stick"></div></div><div id="hud">RUA 3D • PRIMEIRA PESSOA</div><div id="status">Carregando mundo...</div>
+<canvas id="game"></canvas><div id="look"></div><div id="joy"><div id="stick"></div></div>
+<div id="hud">RUA 3D • PRIMEIRA PESSOA</div><div id="status">Motor 3D local...</div>
 <script>
 (function(){
-const cdn=[
-'https://cdn.jsdelivr.net/npm/three@0.181.1/build/three.min.js',
-'https://unpkg.com/three@0.181.1/build/three.min.js'
-];
-function load(i){const s=document.createElement('script');s.src=cdn[i];s.onload=init;s.onerror=()=>i+1<cdn.length?load(i+1):fail();document.head.appendChild(s)}
-function fail(){document.getElementById('status').textContent='Motor 3D não carregou';}
-load(0);
+const c=document.getElementById('game'),gl=c.getContext('webgl',{antialias:false,alpha:false});
+const st=document.getElementById('status');
+if(!gl){st.textContent='WebGL não disponível';return}
+const vs='attribute vec3 p;uniform mat4 mvp;void main(){gl_Position=mvp*vec4(p,1.0);}';
+const fs='precision mediump float;uniform vec3 col;void main(){gl_FragColor=vec4(col,1.0);}';
+function sh(t,s){const x=gl.createShader(t);gl.shaderSource(x,s);gl.compileShader(x);return x}
+const pr=gl.createProgram();gl.attachShader(pr,sh(gl.VERTEX_SHADER,vs));gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,fs));gl.linkProgram(pr);
+const pb=gl.getAttribLocation(pr,'p'),um=gl.getUniformLocation(pr,'mvp'),uc=gl.getUniformLocation(pr,'col');
+gl.useProgram(pr);gl.enable(gl.DEPTH_TEST);gl.enable(gl.CULL_FACE);
+const cubeVerts=new Float32Array([
+-1,-1,-1,1,-1,-1,1,1,-1,-1,1,-1,-1,-1,1,1,-1,1,1,1,1,-1,1,1,
+-1,1,-1,1,1,-1,1,1,1,-1,1,1,-1,-1,-1,1,-1,-1,1,-1,1,-1,-1,1]);
+const idx=new Uint16Array([0,1,2,0,2,3,4,6,5,4,7,6,8,9,10,8,10,11,12,15,14,12,14,13,16,17,18,16,18,19,20,22,21,20,23,22]);
+const vb=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,vb);gl.bufferData(gl.ARRAY_BUFFER,cubeVerts,gl.STATIC_DRAW);
+const ib=gl.createBuffer();gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,ib);gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,idx,gl.STATIC_DRAW);gl.enableVertexAttribArray(pb);gl.vertexAttribPointer(pb,3,gl.FLOAT,false,0,0);
+function mul(a,b){const o=new Float32Array(16);for(let r=0;r<4;r++)for(let col=0;col<4;col++)for(let k=0;k<4;k++)o[r*4+col]+=a[r*4+k]*b[k*4+col];return o}
+function persp(fov,asp,n,f){const q=1/Math.tan(fov/2),o=new Float32Array(16);o[0]=q/asp;o[5]=q;o[10]=(f+n)/(n-f);o[11]=-1;o[14]=2*f*n/(n-f);return o}
+function ident(){const o=new Float32Array(16);o[0]=o[5]=o[10]=o[15]=1;return o}
+function model(x,y,z,sx,sy,sz){const o=ident();o[0]=sx;o[5]=sy;o[10]=sz;o[12]=x;o[13]=y;o[14]=z;return o}
+function view(yaw,pitch,x,y,z){const cy=Math.cos(yaw),sy=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch);return new Float32Array([
+cy,-sy*sp,sy*cp,0,0,cp,sp,0,-sy,-cy*sp,cy*cp,0,
+sy*x+cy*z,-cp*y+sp*(sy*x+cy*z),-cy*x+sy*z,1])}
+function box(x,y,z,sx,sy,sz,col,yaw=0){let m=model(x,y,z,sx,sy,sz);if(yaw){const r=ident(),co=Math.cos(yaw),si=Math.sin(yaw);r[0]=co;r[2]=si;r[8]=-si;r[10]=co;m=mul(r,m)}gl.uniformMatrix4fv(um,false,mul(VP,m));gl.uniform3fv(uc,col);gl.drawElements(gl.TRIANGLES,36,gl.UNSIGNED_SHORT,0)}
+function resize(){const d=Math.min(devicePixelRatio||1,1.2);c.width=innerWidth*d;c.height=innerHeight*d;gl.viewport(0,0,c.width,c.height)}
+addEventListener('resize',resize);resize();
 
-function init(){
-const T=THREE,canvas=document.getElementById('game'),status=document.getElementById('status');
-const scene=new T.Scene();scene.background=new T.Color(0xb9c0c8);scene.fog=new T.Fog(0x8fcdf0,55,150);
-const camera=new T.PerspectiveCamera(72,innerWidth/innerHeight,.05,180);
-camera.position.set(0,1.65,10);camera.rotation.order='YXZ';
-let renderer;
-try{renderer=new T.WebGLRenderer({canvas,antialias:false,powerPreference:'default'});}catch(e){status.textContent='WebGL indisponível neste aparelho';return}
-renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.25));renderer.setSize(innerWidth,innerHeight,false);
-renderer.outputColorSpace=T.SRGBColorSpace;
-scene.add(new T.HemisphereLight(0xffffff,0x687451,1.8));
-const sun=new T.DirectionalLight(0xffffff,1.4);sun.position.set(-25,35,20);scene.add(sun);
-
-function M(c){return new T.MeshLambertMaterial({color:c})}
-function cube(w,h,d,c){return new T.Mesh(new T.BoxGeometry(w,h,d),M(c))}
-function makeHouse(x,z,body,roof){
- const g=new T.Group();
- const main=cube(6,3.5,5.8,body);main.position.y=1.75;g.add(main);
- const roofMesh=new T.Mesh(new T.ConeGeometry(4.35,1.7,4),M(roof));roofMesh.rotation.y=Math.PI/4;roofMesh.position.y=4.35;g.add(roofMesh);
- const front=cube(4.9,2.7,.12,body);front.position.set(0,1.55,2.94);g.add(front);
- const door=cube(1,1.9,.16,0x493c35);door.position.set(0,.95,3.03);g.add(door);
- [-1.9,1.9].forEach(q=>{const w=cube(1.25,1.05,.16,0xb9dbe5);w.position.set(q,2.05,3.03);g.add(w)});
- const sideWin=cube(.16,1.05,1.25,0xb9dbe5);sideWin.position.set(3.03,2.05,-.7);g.add(sideWin);
- const step=cube(2,.22,.8,0xbab1a7);step.position.set(0,.11,3.35);g.add(step);
- g.position.set(x,0,z);scene.add(g);
+function house(x,z,c1,c2){
+ box(x,1.8,z,3,1.8,2.8,c1);
+ box(x,3.65,z,2.9,.55,2.7,c2,.785);
+ box(x,1.0,z-2.9,.55,1,.12,[.22,.15,.12]);
+ box(x-1.9,2.05,z-2.9,.7,.6,.12,[.65,.82,.9]);
+ box(x+1.9,2.05,z-2.9,.7,.6,.12,[.65,.82,.9]);
+ box(x,0.12,z-3.25,1.1,.12,.5,[.65,.62,.58]);
 }
-function makeTree(x,z){
- const g=new T.Group();
- const trunk=new T.Mesh(new T.CylinderGeometry(.2,.27,2.7,10),M(0x68452d));trunk.position.y=1.35;g.add(trunk);
- const a=new T.Mesh(new T.SphereGeometry(1.5,12,10),M(0x4f8146));a.position.y=3.1;g.add(a);
- const b=new T.Mesh(new T.SphereGeometry(1.05,12,10),M(0x5c8d4c));b.position.set(.8,3.35,.15);g.add(b);
- g.position.set(x,0,z);scene.add(g);
-}
-function makePole(x,z){
- const p=cube(.18,7,.18,0x777777);p.position.set(x,3.5,z);scene.add(p);
- const arm=cube(1.2,.12,.14,0x3e3e3e);arm.position.set(x,6.8,z);scene.add(arm);
- const lamp=new T.Mesh(new T.SphereGeometry(.18,8,6),M(0xf4e4a5));lamp.position.set(x,6.65,z);scene.add(lamp);
-}
-cube(14,.18,140,0x555555).position.set(0,-.09,48);
-cube(2.4,.22,140,0xc3bdb3).position.set(-8.2,.02,48);
-cube(2.4,.22,140,0xc3bdb3).position.set(8.2,.02,48);
-cube(3.2,.15,140,0x789866).position.set(-11,.01,48);
-cube(3.2,.15,140,0x789866).position.set(11,.01,48);
-for(let z=0;z<130;z+=9)cube(.16,.025,4,0xe7d27b).position.set(0,.02,z);
+function tree(x,z){box(x,1.4,z,.22,1.4,.22,[.35,.2,.1]);box(x,3,z,1.35,1.35,1.35,[.2,.48,.22]);box(x+.7,3.25,z,1,1,1,[.24,.52,.25])}
+function pole(x,z){box(x,3.5,z,.09,3.5,.09,[.42,.42,.42]);box(x,6.65,z,.6,.07,.07,[.2,.2,.2]);box(x,6.5,z,.18,.18,.18,[.95,.85,.45])}
 
-const data=[
-[-11.5,2,0xd7bd98,0x754a3d],[11.5,2,0xe7dfd4,0x985044],
-[-11.5,17,0xc77d6c,0x69483c],[11.5,17,0x6e91a4,0x565656],
-[-11.5,34,0xd2b58a,0x76503d],[11.5,34,0xdcd4c8,0x855348],
-[-11.5,53,0xb96e60,0x69473c],[11.5,53,0xd5cec2,0x704d45],
-[-11.5,74,0xc7aa7f,0x704a3b],[11.5,74,0xe2ddd4,0x875346]];
-data.forEach(a=>makeHouse(a[0],a[1],a[2],a[3]));
-[[-6,9],[6,25],[-6,43],[6,61],[-6,82],[6,99]].forEach(a=>makeTree(a[0],a[1]));
-[[-6.8,4],[6.8,23],[-6.8,47],[6.8,69],[-6.8,91]].forEach(a=>makePole(a[0],a[1]));
+house(-11.5,2,[.72,.58,.43],[.42,.25,.2]);house(11.5,2,[.78,.75,.7],[.55,.28,.2]);
+house(-11.5,17,[.72,.38,.32],[.32,.22,.18]);house(11.5,17,[.35,.52,.62],[.34,.34,.34]);
+house(-11.5,34,[.68,.53,.4],[.4,.3,.23]);house(11.5,34,[.72,.68,.62],[.5,.3,.25]);
+house(-11.5,53,[.68,.38,.32],[.38,.25,.2]);house(11.5,53,[.68,.65,.58],[.42,.3,.26]);
+house(-11.5,74,[.65,.52,.4],[.4,.28,.22]);house(11.5,74,[.78,.75,.7],[.45,.28,.22]);
+[[-6,9],[6,25],[-6,43],[6,61],[-6,82],[6,99]].forEach(a=>tree(a[0],a[1]));
+[[-6.8,4],[6.8,23],[-6.8,47],[6.8,69],[-6.8,91]].forEach(a=>pole(a[0],a[1]));
+for(let z=-5;z<125;z+=5)box(0,.0,z,7,.08,2.5,[.32,.33,.34]);
+box(-8.2,.08,58,1.2,.1,70,[.7,.68,.63]);box(8.2,.08,58,1.2,.1,70,[.7,.68,.63]);
+box(-11,.04,58,1.4,.05,70,[.42,.55,.34]);box(11,.04,58,1.4,.05,70,[.42,.55,.34]);
 
-let yaw=0,pitch=0,jx=0,jy=0,joyId=null,lookId=null,lastX=0,lastY=0;
+let yaw=0,pitch=0,px=0,pz=10,jx=0,jy=0,joyId=null,lookId=null,lx=0,ly=0;
 const joy=document.getElementById('joy'),stick=document.getElementById('stick'),look=document.getElementById('look');
-function jm(e){const r=joy.getBoundingClientRect();let dx=e.clientX-r.left-r.width/2,dy=e.clientY-r.top-r.height/2,m=36,n=Math.hypot(dx,dy);if(n>m){dx=dx/n*m;dy=dy/n*m}jx=dx/m;jy=dy/m;stick.style.transform='translate('+dx+'px,'+dy+'px)'}
-joy.addEventListener('pointerdown',e=>{joyId=e.pointerId;joy.setPointerCapture(e.pointerId);jm(e)});
-joy.addEventListener('pointermove',e=>{if(e.pointerId===joyId)jm(e)});
-function je(e){if(e.pointerId===joyId){joyId=null;jx=jy=0;stick.style.transform='translate(0,0)'}}joy.addEventListener('pointerup',je);joy.addEventListener('pointercancel',je);
-look.addEventListener('pointerdown',e=>{lookId=e.pointerId;lastX=e.clientX;lastY=e.clientY;look.setPointerCapture(e.pointerId)});
-look.addEventListener('pointermove',e=>{if(e.pointerId!==lookId)return;yaw-=(e.clientX-lastX)*.0045;pitch-=(e.clientY-lastY)*.0035;pitch=Math.max(-1.2,Math.min(1.2,pitch));lastX=e.clientX;lastY=e.clientY});
-look.addEventListener('pointerup',()=>lookId=null);look.addEventListener('pointercancel',()=>lookId=null);
+function jm(e){const r=joy.getBoundingClientRect();let dx=e.clientX-r.left-r.width/2,dy=e.clientY-r.top-r.height/2,m=40,n=Math.hypot(dx,dy);if(n>m){dx*=m/n;dy*=m/n}jx=dx/m;jy=dy/m;stick.style.transform='translate('+dx+'px,'+dy+'px)'}
+joy.onpointerdown=e=>{joyId=e.pointerId;joy.setPointerCapture(e.pointerId);jm(e)};joy.onpointermove=e=>{if(e.pointerId===joyId)jm(e)};
+function je(e){if(e.pointerId===joyId){joyId=null;jx=jy=0;stick.style.transform='translate(0,0)'}}joy.onpointerup=je;joy.onpointercancel=je;
+look.onpointerdown=e=>{lookId=e.pointerId;lx=e.clientX;ly=e.clientY;look.setPointerCapture(e.pointerId)};
+look.onpointermove=e=>{if(e.pointerId!==lookId)return;yaw-=(e.clientX-lx)*.0045;pitch-=(e.clientY-ly)*.0035;pitch=Math.max(-1.1,Math.min(1.1,pitch));lx=e.clientX;ly=e.clientY};
+look.onpointerup=()=>lookId=null;look.onpointercancel=()=>lookId=null;
 
-const keys={};addEventListener('keydown',e=>keys[e.code]=1);addEventListener('keyup',e=>keys[e.code]=0);
-let last=performance.now();
-function loop(now){
- const dt=Math.min(.05,(now-last)/1000);last=now;
- let f=(keys.KeyW||keys.ArrowUp?1:0)-((keys.KeyS||keys.ArrowDown)?1:0)-jy;
- let s=(keys.KeyD||keys.ArrowRight?1:0)-((keys.KeyA||keys.ArrowLeft)?1:0)+jx;
- const n=Math.hypot(f,s);if(n>1){f/=n;s/=n}
- const speed=5.2*dt;
- camera.position.x+=(Math.sin(yaw)*f+Math.cos(yaw)*s)*speed;
- camera.position.z+=(-Math.cos(yaw)*f+Math.sin(yaw)*s)*speed;
- camera.position.x=Math.max(-6.1,Math.min(6.1,camera.position.x));
- camera.position.z=Math.max(-1,Math.min(112,camera.position.z));
- camera.position.y=1.65;
- camera.rotation.y=yaw;camera.rotation.x=pitch;
- renderer.render(scene,camera);requestAnimationFrame(loop);
+const VP=new Float32Array(16);
+function frame(){
+ const f=-jy,s=jx,sp=.12;
+ px+=(Math.sin(yaw)*f+Math.cos(yaw)*s)*sp;pz+=(-Math.cos(yaw)*f+Math.sin(yaw)*s)*sp;
+ px=Math.max(-6,Math.min(6,px));pz=Math.max(-2,Math.min(112,pz));
+ const P=persp(1.25,c.width/c.height,.05,160),V=view(yaw,pitch,px,1.65,pz);
+ VP.set(mul(P,V));gl.clearColor(.62,.79,.92,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+ box(0,-.1,60,7,.08,70,[.28,.29,.3]);
+ st.textContent='MUNDO 3D • PRONTO';requestAnimationFrame(frame);
 }
-status.textContent='MUNDO 3D • PRONTO';requestAnimationFrame(loop);
-addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight,false)});
-}
+requestAnimationFrame(frame);
 })();
 </script>
 </body></html>
