@@ -266,13 +266,13 @@ function npc(n){
  const rKnee=proj(n.x+.11,n.z-step*.45,.40);
  const lFoot=proj(n.x-.11,n.z+step,0);
  const rFoot=proj(n.x+.11,n.z-step,0);
- line([lHip,lKnee,lFoot],"#303b4b",Math.max(2,s*.042));
+ line([lHip,lKnee,lFoot],"#303b4b",Math.max(3,s*.060));
  line([rHip,rKnee,rFoot],"#303b4b",Math.max(2,s*.042));
 
  // Tronco central, com tamanho fixo em relação à cabeça e às pernas.
  ctx.fillStyle="#4f6f91";
  ctx.beginPath();
- ctx.ellipse(chest.x,chest.y,Math.max(5,s*.19),Math.max(9,s*.30),0,0,Math.PI*2);ctx.fill();
+ ctx.ellipse(chest.x,chest.y,Math.max(7,s*.255),Math.max(10,s*.31),0,0,Math.PI*2);ctx.fill();
 
  // Braços saindo dos ombros, não da cintura.
  const lShoulder=proj(n.x-.22,n.z,1.28);
@@ -281,15 +281,15 @@ function npc(n){
  const rElbow=proj(n.x+.28,n.z-step*.35,.92);
  const lHand=proj(n.x-.30,n.z+step*.65,.56);
  const rHand=proj(n.x+.30,n.z-step*.65,.56);
- line([lShoulder,lElbow,lHand],"#d39a78",Math.max(2,s*.032));
+ line([lShoulder,lElbow,lHand],"#d39a78",Math.max(3,s*.045));
  line([rShoulder,rElbow,rHand],"#d39a78",Math.max(2,s*.032));
 
  // Pescoço curto e cabeça centralizada sobre o tronco.
  const neck=proj(n.x,n.z,1.40);
  // Pescoço curto e parcialmente escondido dentro do tronco.
- line([neck,head],"#d39a78",Math.max(2,s*.045));
+ line([neck,head],"#d39a78",Math.max(3,s*.052));
  ctx.fillStyle="#d39a78";
- ctx.beginPath();ctx.arc(head.x,head.y,Math.max(4,s*.145),0,Math.PI*2);ctx.fill();
+ ctx.beginPath();ctx.arc(head.x,head.y,Math.max(5,s*.165),0,Math.PI*2);ctx.fill();
 }
 let npcLast=performance.now();
 function updateNPCs(now){
