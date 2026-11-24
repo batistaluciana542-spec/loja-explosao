@@ -61,18 +61,24 @@ function proj(p){
  return {x:sx,y:sy,z:p.z};
 }
 function poly(points,fill,stroke){
- const ps=points.map(p=>proj(p)); if(ps.some(p=>!p))return;
- ctx.beginPath();ctx.moveTo(ps[0].x,ps[0].y);for(let i=1;i<ps.length;i++)ctx.lineTo(ps[i].x,ps[i].y);ctx.closePath();
- ctx.fillStyle=fill;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=1;ctx.stroke()}
+ const ps=points.map(p=>proj(worldToCam(p[0],p[1],p[2])));
+ if(ps.some(p=>!p))return;
+ ctx.beginPath();ctx.moveTo(ps[0].x,ps[0].y);
+ for(let i=1;i<ps.length;i++)ctx.lineTo(ps[i].x,ps[i].y);
+ ctx.closePath();ctx.fillStyle=fill;ctx.fill();
+ if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=1;ctx.stroke()}
 }
 function box(x,y,z,w,h,d,col){
  const x1=x-w/2,x2=x+w/2,z1=z-d/2,z2=z+d/2;
- poly([[x1,y,z1],[x2,y,z1],[x2,y,z2],[x1,y,z2]],col);
- poly([[x1,y+h,z1],[x2,y+h,z1],[x2,y+h,z2],[x1,y+h,z2]],col);
- poly([[x1,y,z1],[x1,y+h,z1],[x2,y+h,z1],[x2,y,z1]],col);
- poly([[x2,y,z1],[x2,y+h,z1],[x2,y+h,z2],[x2,y,z2]],col);
- poly([[x2,y,z2],[x2,y+h,z2],[x1,y+h,z2],[x1,y,z2]],col);
- poly([[x1,y,z2],[x1,y+h,z2],[x1,y+h,z1],[x1,y,z1]],col);
+ const faces=[
+ [[x1,y,z1],[x2,y,z1],[x2,y+h,z1],[x1,y+h,z1]],
+ [[x2,y,z1],[x2,y,z2],[x2,y+h,z2],[x2,y+h,z1]],
+ [[x2,y,z2],[x1,y,z2],[x1,y+h,z2],[x2,y+h,z2]],
+ [[x1,y,z2],[x1,y,z1],[x1,y+h,z1],[x1,y+h,z2]],
+ [[x1,y+h,z1],[x2,y+h,z1],[x2,y+h,z2],[x1,y+h,z2]]
+ ];
+ faces.map(f=>({f,d:f.reduce((s,p)=>s+worldToCam(p[0],p[1],p[2]).z,0)/4}))
+ .sort((a,b)=>b.d-a.d).forEach(o=>poly(o.f,col));
 }
 function house(q){
  box(q.x,0,q.z,q.w,q.h,q.d,q.col);
@@ -85,7 +91,7 @@ function house(q){
 function tree(t){
  const y=0,base=t.z;
  box(t.x,.2,base,.35,2.1,.35,'#6b472f');
- const p=worldToCam(t.x,2.6,base),s=proj(p);if(!s)return;
+ const s=proj(worldToCam(t.x,2.6,base));if(!s)return;
  const r=Math.max(7,Math.min(45,125*t.s/s.z));
  ctx.fillStyle='#3f7b45';ctx.beginPath();ctx.arc(s.x,s.y,r,0,Math.PI*2);ctx.fill();
  ctx.fillStyle='#4d8b4c';ctx.beginPath();ctx.arc(s.x-r*.4,s.y+r*.05,r*.65,0,Math.PI*2);ctx.fill();
@@ -96,22 +102,23 @@ function pole(q){
  const pa=proj(a),pb=proj(b);if(pa&&pb){ctx.strokeStyle='#30302e';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(pa.x,pa.y);ctx.lineTo(pb.x,pb.y);ctx.stroke()}
 }
 function ground(){
- poly([[-40,0,-20],[40,0,-20],[40,0,70],[-40,0,70]],'#6f9658');
- poly([[-3,0,-20],[3,0,-20],[3,0,70],[-3,0,70]],'#505050');
- poly([[-5,0,-20],[-3,0,-20],[-3,0,70],[-5,0,70]],'#c8c0b5');
- poly([[3,0,-20],[5,0,-20],[5,0,70],[3,0,70]],'#c8c0b5');
- for(let z=-10;z<70;z+=8)poly([[-.11,.01,z],[.11,.01,z],[.11,.01,z+3],[-.11,.01,z+3]],'#e4d47b');
+ poly([[-30,0,-25],[30,0,-25],[30,0,75],[-30,0,75]],'#70945b');
+ poly([[-3.2,.01,-25],[3.2,.01,-25],[3.2,.01,75],[-3.2,.01,75]],'#505050');
+ poly([[-5,.02,-25],[-3.2,.02,-25],[-3.2,.02,75],[-5,.02,75]],'#c9c1b7');
+ poly([[3.2,.02,-25],[5,.02,-25],[5,.02,75],[3.2,.02,75]],'#c9c1b7');
+ for(let z=-15;z<75;z+=9)poly([[-.12,.03,z],[.12,.03,z],[.12,.03,z+3.5],[-.12,.03,z+3.5]],'#e4d47b');
 }
 function draw(){
  ctx.fillStyle='#9fc8df';ctx.fillRect(0,0,W,H);
- const sky=ctx.createLinearGradient(0,0,0,H*.6);sky.addColorStop(0,'#8fc6e4');sky.addColorStop(1,'#d9e8ed');ctx.fillStyle=sky;ctx.fillRect(0,0,W,H*.62);
+ const sky=ctx.createLinearGradient(0,0,0,H*.65);
+ sky.addColorStop(0,'#8fc6e4');sky.addColorStop(1,'#dce9ed');
+ ctx.fillStyle=sky;ctx.fillRect(0,0,W,H*.65);
  ground();
  const items=[];
- houses.forEach(q=>items.push({z:q.z,fn:()=>house(q)}));
- trees.forEach(q=>items.push({z:q.z,fn:()=>tree(q)}));
- poles.forEach(q=>items.push({z:q.z,fn:()=>pole(q)}));
- items.sort((a,b)=>b.z-a.z).forEach(i=>i.fn());
- requestAnimationFrame(draw);
+ houses.forEach(q=>items.push({p:worldToCam(q.x,1.5,q.z),fn:()=>house(q)}));
+ trees.forEach(q=>items.push({p:worldToCam(q.x,1,q.z),fn:()=>tree(q)}));
+ poles.forEach(q=>items.push({p:worldToCam(q.x,2.5,q.z),fn:()=>pole(q)}));
+ items.sort((a,b)=>b.p.z-a.p.z).forEach(i=>i.fn());
 }
 function update(now){
  const dt=Math.min(.04,(now-last)/1000);last=now;
