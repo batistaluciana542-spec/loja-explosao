@@ -52,38 +52,32 @@ function line(points,stroke,width=1){if(points.some(p=>!p))return;ctx.strokeStyl
 function ground(){
  ctx.fillStyle="#9bd0ea";ctx.fillRect(0,0,W,H);
  const horizon=Math.max(0,Math.min(H,H*.53+Math.sin(C.pitch)*Math.min(W,H)*.92));
- // Base do terreno continua verde. A rua e as calçadas são superfícies
- // próprias e ficam por cima dela. Assim o restante do mapa não fica cinza.
+
+ // Terreno base verde, independente da posição do jogador.
  ctx.fillStyle="#86a66b";ctx.fillRect(0,horizon,W,H-horizon);
 
  const strips=[[-5.4,-3.65,"#c5beb2"],[-3.65,3.65,"#55575a"],[3.65,5.4,"#c5beb2"]];
 
- // Cobertura fixa da região imediatamente à frente da câmera. O ponto de
- // início é uma coordenada mundial calculada a partir do trecho fixo visível,
- // não uma faixa que acompanha o jogador.
- const nearZ=Math.max(-100,Math.min(269,C.z+.36));
- for(const [l,r,col] of strips){
-   const p1=proj(l,nearZ),p2=proj(r,nearZ),p3=proj(r,nearZ+1.8),p4=proj(l,nearZ+1.8);
-   if(p1&&p2&&p3&&p4)poly([p1,p2,p3,p4],col);
- }
-
- // COORDENADAS FIXAS DO MUNDO. Nunca usamos C.z para criar/reposicionar o chão.
+ // Superfícies da rua em coordenadas mundiais fixas.
  for(let z=-100;z<270;z+=2.2){
    for(const [l,r,col] of strips){
      const p1=proj(l,z),p2=proj(r,z),p3=proj(r,z+2.2),p4=proj(l,z+2.2);
      if(p1&&p2&&p3&&p4)poly([p1,p2,p3,p4],col);
    }
  }
+
  for(const x of [-3.65,3.65]){
    for(let z=-100;z<270;z+=1.5){
      const p1=proj(x,z),p2=proj(x,z+1.5);
      if(p1&&p2)line([p1,p2],"#8b8d8d",1);
    }
  }
+
  for(let z=-100;z<270;z+=8){
    const p1=proj(-.08,z),p2=proj(.08,z),p3=proj(.08,z+3.4),p4=proj(-.08,z+3.4);
    if(p1&&p2&&p3&&p4)poly([p1,p2,p3,p4],"#e3d36c");
  }
+
  for(let z=-100;z<270;z+=8){
    let p1=proj(-5.35,z),p2=proj(-3.7,z);
    if(p1&&p2)line([p1,p2],"#aaa59b",.7);
