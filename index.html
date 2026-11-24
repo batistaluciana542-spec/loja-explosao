@@ -52,7 +52,9 @@ function line(points,stroke,width=1){if(points.some(p=>!p))return;ctx.strokeStyl
 function ground(){
  ctx.fillStyle="#9bd0ea";ctx.fillRect(0,0,W,H);
  const horizon=Math.max(0,Math.min(H,H*.53+Math.sin(C.pitch)*Math.min(W,H)*.92));
- ctx.fillStyle="#86a66b";ctx.fillRect(0,horizon,W,H-horizon);
+ // O fundo abaixo do horizonte usa a mesma cor da calçada/grama apenas nas áreas
+ // fora da malha. Mantemos a faixa inferior coberta pela superfície da rua.
+ ctx.fillStyle="#55575a";ctx.fillRect(0,horizon,W,H-horizon);
 
  const strips=[[-5.4,-3.65,"#c5beb2"],[-3.65,3.65,"#55575a"],[3.65,5.4,"#c5beb2"]];
 
