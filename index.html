@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Rua 3D</title>
 <style>
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#8fcdf0;touch-action:none}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#b9c0c8;touch-action:none}
 #game{position:fixed;inset:0;width:100%;height:100%;display:block}
 #look{position:fixed;right:0;top:0;width:68%;height:100%;z-index:5}
 #joy{position:fixed;left:18px;bottom:20px;width:136px;height:136px;border:2px solid #fff8;border-radius:50%;background:#ffffff28;z-index:10}
@@ -19,8 +19,8 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#8fcdf0;tou
 <script>
 (function(){
 const cdn=[
-'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js',
-'https://unpkg.com/three@0.160.0/build/three.min.js'
+'https://cdn.jsdelivr.net/npm/three@0.181.1/build/three.min.js',
+'https://unpkg.com/three@0.181.1/build/three.min.js'
 ];
 function load(i){const s=document.createElement('script');s.src=cdn[i];s.onload=init;s.onerror=()=>i+1<cdn.length?load(i+1):fail();document.head.appendChild(s)}
 function fail(){document.getElementById('status').textContent='Motor 3D não carregou';}
@@ -28,12 +28,12 @@ load(0);
 
 function init(){
 const T=THREE,canvas=document.getElementById('game'),status=document.getElementById('status');
-const scene=new T.Scene();scene.background=new T.Color(0x8fcdf0);scene.fog=new T.Fog(0x8fcdf0,55,150);
+const scene=new T.Scene();scene.background=new T.Color(0xb9c0c8);scene.fog=new T.Fog(0x8fcdf0,55,150);
 const camera=new T.PerspectiveCamera(72,innerWidth/innerHeight,.05,180);
 camera.position.set(0,1.65,10);camera.rotation.order='YXZ';
 let renderer;
-try{renderer=new T.WebGLRenderer({canvas,antialias:true});}catch(e){status.textContent='WebGL indisponível neste aparelho';return}
-renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.4));renderer.setSize(innerWidth,innerHeight,false);
+try{renderer=new T.WebGLRenderer({canvas,antialias:false,powerPreference:'default'});}catch(e){status.textContent='WebGL indisponível neste aparelho';return}
+renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.25));renderer.setSize(innerWidth,innerHeight,false);
 renderer.outputColorSpace=T.SRGBColorSpace;
 scene.add(new T.HemisphereLight(0xffffff,0x687451,1.8));
 const sun=new T.DirectionalLight(0xffffff,1.4);sun.position.set(-25,35,20);scene.add(sun);
@@ -106,7 +106,7 @@ function loop(now){
  camera.rotation.y=yaw;camera.rotation.x=pitch;
  renderer.render(scene,camera);requestAnimationFrame(loop);
 }
-status.textContent='Mundo 3D carregado';requestAnimationFrame(loop);
+status.textContent='MUNDO 3D • PRONTO';requestAnimationFrame(loop);
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight,false)});
 }
 })();
