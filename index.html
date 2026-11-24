@@ -6,7 +6,7 @@
 <title>NEON FRONTIER</title>
 <style>
 *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#08111d;color:white;font-family:Arial,sans-serif}
-#game{position:fixed;inset:0;width:100%;height:100%;touch-action:none;display:block;z-index:1;background:linear-gradient(#6fc7ff 0%,#bfeeff 55%,#78b86b 55%,#16351c 100%)}
+#game{position:fixed;inset:0;width:100%;height:100%;touch-action:none;display:block;z-index:1;overscroll-behavior:none;background:linear-gradient(#6fc7ff 0%,#bfeeff 55%,#78b86b 55%,#16351c 100%)}
 #menu{position:fixed;inset:0;z-index:5;display:grid;place-items:center;background:radial-gradient(circle at 50% 35%,#174a78,#070b16 62%,#020308)}
 .panel{width:min(92vw,560px);padding:30px;border:1px solid #4eeaff66;border-radius:26px;background:#07111eee;box-shadow:0 0 70px #00d9ff25;text-align:center}
 .logo{font-size:clamp(42px,10vw,72px);font-weight:900;letter-spacing:7px;color:#9cffff;text-shadow:0 0 12px #00eaff,0 0 45px #007bff}
@@ -20,7 +20,7 @@ input,button{border:1px solid #55eaff66;border-radius:12px;background:#0b1930;co
 #actions{right:10px;bottom:10px;display:flex;gap:6px;flex-wrap:wrap;max-width:350px}.action{padding:9px;font-size:12px}
 #inv{display:none;right:10px;bottom:65px;width:260px}.slot{display:inline-block;width:58px;height:54px;margin:3px;padding:7px;border:1px solid #4eeaff44;border-radius:9px;text-align:center;font-size:10px;background:#0a1830}
 #cross{position:fixed;left:50%;top:50%;width:20px;height:20px;transform:translate(-50%,-50%);z-index:4;pointer-events:none}.cross:before,.cross:after{content:"";position:absolute;background:white;box-shadow:0 0 6px #5ff}.cross:before{left:9px;width:2px;height:20px}.cross:after{top:9px;height:2px;width:20px}
-#mobile{display:none;position:fixed;inset:0;z-index:4;pointer-events:none}.pad{position:absolute;left:18px;bottom:18px;width:145px;height:145px;border-radius:50%;background:#ffffff0d;border:1px solid #ffffff22;pointer-events:auto}.pad button{position:absolute;width:45px;height:45px;padding:0;background:#0a193dcc}.u{left:50px;top:4px}.d{left:50px;bottom:4px}.l{left:4px;top:50px}.r{right:4px;top:50px}.mine{position:absolute;right:25px;bottom:35px;width:70px;height:70px;border-radius:50%;pointer-events:auto;background:#7435aacc}
+#mobile{display:none;position:fixed;inset:0;z-index:10;pointer-events:none;touch-action:none;overscroll-behavior:none}.pad{position:absolute;left:18px;bottom:18px;width:145px;height:145px;border-radius:50%;background:#ffffff0d;border:1px solid #ffffff22;pointer-events:auto}.pad button{position:absolute;width:45px;height:45px;padding:0;background:#0a193dcc}.u{left:50px;top:4px}.d{left:50px;bottom:4px}.l{left:4px;top:50px}.r{right:4px;top:50px}.mine{position:absolute;right:25px;bottom:35px;width:70px;height:70px;border-radius:50%;pointer-events:auto;background:#7435aacc}
 @media(max-width:700px){#mobile{display:block}#actions{display:none}#mission{width:180px}.panel{padding:22px}#chat{width:250px;height:120px}.msgs{height:65px}}
 </style>
 </head>
@@ -65,7 +65,28 @@ document.getElementById("create").onclick=function(){room=Math.random().toString
 document.getElementById("join").onclick=function(){let c=prompt("Código da sala:");if(c){room=c.toUpperCase();start();addMsg("🔗 Sala: "+room)}};
 addEventListener("keydown",e=>{keys[e.key.toLowerCase()]=true;if(e.code==="Space")mine()});
 addEventListener("keyup",e=>keys[e.key.toLowerCase()]=false);
-document.querySelectorAll("[data-k]").forEach(b=>{b.addEventListener("touchstart",e=>{e.preventDefault();keys[b.dataset.k]=true},{passive:false});b.addEventListener("touchend",e=>{e.preventDefault();keys[b.dataset.k]=false},{passive:false})});
+document.querySelectorAll("[data-k]").forEach(b=>{
+ b.addEventListener("pointerdown",e=>{e.preventDefault();b.setPointerCapture(e.pointerId);keys[b.dataset.k]=true},{passive:false});
+ b.addEventListener("pointerup",e=>{e.preventDefault();keys[b.dataset.k]=false},{passive:false});
+ b.addEventListener("pointercancel",e=>{keys[b.dataset.k]=false},{passive:false});
+});
+let lookId=null,lastX=0,lastY=0;
+canvas.addEventListener("pointerdown",e=>{
+ if(!playing)return;
+ if(e.pointerType==="touch"){lookId=e.pointerId;lastX=e.clientX;lastY=e.clientY;canvas.setPointerCapture(e.pointerId);}
+},{passive:false});
+canvas.addEventListener("pointermove",e=>{
+ if(e.pointerId!==lookId)return;
+ e.preventDefault();
+ let dx=e.clientX-lastX;
+ p.yaw+=dx*.008;
+ lastX=e.clientX;lastY=e.clientY;
+},{passive:false});
+canvas.addEventListener("pointerup",e=>{if(e.pointerId===lookId)lookId=null},{passive:false});
+canvas.addEventListener("pointercancel",e=>{if(e.pointerId===lookId)lookId=null},{passive:false});
+document.addEventListener("touchmove",e=>{
+ if(playing)e.preventDefault();
+},{passive:false});
 document.getElementById("mine").onclick=mine;document.getElementById("mmine").onclick=mine;
 document.getElementById("bag").onclick=()=>{let e=document.getElementById("inv");e.style.display=e.style.display==="block"?"none":"block";ui()};
 document.getElementById("save").onclick=()=>{localStorage.setItem("neon-frontier-save",JSON.stringify(p));addMsg("💾 Progresso salvo.")};
