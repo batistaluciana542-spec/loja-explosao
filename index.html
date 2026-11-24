@@ -162,26 +162,27 @@ function house(h){
  wallSeg(h.x+1.08,x2+.28);
 }
 function tree(x,z){
- let b=proj(x,z,0),t=proj(x,z,3.0);if(!b||!t)return;
- const trunkW=Math.max(5,b.s*.13);
- line([b,t],"#5a402c",trunkW);
+ const base=proj(x,z,0), trunkTop=proj(x,z,3.15);
+ if(!base||!trunkTop)return;
 
- const crown=[
-   [-.65,2.65,.82], [.65,2.65,.82],
-   [-.42,3.18,.9], [.42,3.18,.9],
-   [0,3.55,1.0], [-.55,3.55,.72], [.55,3.55,.72],
-   [0,4.0,.72]
+ // Tronco robusto, com uma leve divisão no topo.
+ const tw=Math.max(6,base.s*.16);
+ line([base,trunkTop],"#60422d",tw);
+ const forkL=proj(x-.38,z,3.35),forkR=proj(x+.38,z,3.35);
+ if(forkL)line([trunkTop,forkL],"#60422d",Math.max(4,base.s*.08));
+ if(forkR)line([trunkTop,forkR],"#60422d",Math.max(4,base.s*.08));
+
+ // Copa grande e irregular, construída em camadas.
+ const blobs=[
+  [-.72,2.95,.78,"#315b35"],[.72,2.95,.78,"#315b35"],
+  [-.48,3.42,.88,"#3b6b3b"],[.48,3.42,.88,"#3b6b3b"],
+  [0,3.65,1.02,"#477d43"],[-.65,3.72,.72,"#477d43"],[.65,3.72,.72,"#477d43"],
+  [0,4.12,.76,"#568c4d"],[-.28,4.32,.52,"#67995a"],[.38,4.22,.55,"#5f9252"]
  ];
- for(const [ox,oy,r] of crown){
+ for(const [ox,oy,r,col] of blobs){
    const q=proj(x+ox,z,oy); if(!q)continue;
-   const R=Math.max(10,q.s*r);
-   ctx.fillStyle="#355d35";
-   ctx.beginPath();ctx.arc(q.x,q.y,R,0,Math.PI*2);ctx.fill();
- }
- for(const [ox,oy,r] of crown.slice(1,7)){
-   const q=proj(x+ox-.18,z,oy+.12); if(!q)continue;
-   const R=Math.max(8,q.s*r*.72);
-   ctx.fillStyle="#568449";
+   const R=Math.max(11,q.s*r);
+   ctx.fillStyle=col;
    ctx.beginPath();ctx.arc(q.x,q.y,R,0,Math.PI*2);ctx.fill();
  }
 }
