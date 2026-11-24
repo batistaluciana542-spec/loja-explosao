@@ -11,9 +11,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Download Three.js
-        run: curl -L --fail --retry 3 https://unpkg.com/three@0.181.1/build/three.min.js -o three.min.js
-      - name: Commit Three.js
+      - name: Baixar Three.js local
+        run: curl -L --fail --retry 5 https://unpkg.com/three@0.181.1/build/three.min.js -o three.min.js
+      - name: Verificar arquivo
+        run: test -s three.min.js
+      - name: Salvar Three.js no repositório
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
