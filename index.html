@@ -3,62 +3,68 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Rua 3D</title>
+<title>Rua 3D - Primeira Pessoa</title>
 <style>
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#8fc7ee;font-family:Arial,sans-serif;touch-action:none}
-#world{position:fixed;inset:0;overflow:hidden;background:linear-gradient(#8fc7ee 0 54%,#777 54% 100%)}
-.sky{position:absolute;inset:0 0 46%;background:linear-gradient(#78bce8,#d7efff)}
-.road{position:absolute;left:0;right:0;bottom:0;height:47%;background:#686868;clip-path:polygon(35% 0,65% 0,100% 100%,0 100%)}
-.side{position:absolute;bottom:0;height:47%;width:36%;background:#c8c3ba}
-.side.l{left:0;clip-path:polygon(0 0,100% 0,70% 100%,0 100%)}
-.side.r{right:0;clip-path:polygon(0 0,100% 0,100% 100%,30% 100%)}
-.centerline{position:absolute;bottom:0;left:50%;width:5px;height:47%;transform:translateX(-50%);background:repeating-linear-gradient(to bottom,#eee 0 32px,transparent 32px 70px);opacity:.75}
-.house{position:absolute;bottom:36%;width:19%;height:29%;background:#eee;border:2px solid #444;box-shadow:0 10px 20px #0004}
-.house:before{content:"";position:absolute;left:0;right:0;top:-22%;height:24%;background:#8c5540;clip-path:polygon(0 100%,50% 0,100% 100%)}
-.house:after{content:"";position:absolute;left:18%;right:18%;bottom:12%;height:35%;background:repeating-linear-gradient(90deg,#264d70 0 18%,#d9e8ef 18% 25%,#264d70 25% 43%,#d9e8ef 43% 50%,#264d70 50% 68%,#d9e8ef 68% 75%,#264d70 75% 100%);border:3px solid #333}
-.h1{left:3%;transform:perspective(500px) rotateY(18deg) scale(.9);background:#e6d1b4}
-.h2{left:25%;transform:perspective(500px) rotateY(8deg) scale(.72);background:#d7d7d7}
-.h3{right:25%;transform:perspective(500px) rotateY(-8deg) scale(.72);background:#e8d7c7}
-.h4{right:3%;transform:perspective(500px) rotateY(-18deg) scale(.9);background:#d8c9e8}
-.wall{position:absolute;bottom:32%;height:10%;width:25%;background:#b8a48d;border:2px solid #665b50}
-.w1{left:0}.w2{right:0}
-.tree{position:absolute;bottom:40%;width:28px;height:90px;background:#76543c;border-radius:8px}
-.tree:before{content:"";position:absolute;width:80px;height:80px;left:-26px;top:-55px;background:#397342;border-radius:50%;box-shadow:25px 8px 0 #44834b,-22px 10px 0 #32653a}
-.t1{left:15%}.t2{right:15%}
-.post{position:absolute;bottom:38%;width:7px;height:42%;background:#555}
-.post:before,.post:after{content:"";position:absolute;height:4px;background:#444;width:130px;left:-60px;top:10%}
-.post:after{top:17%;width:160px;left:-76px}
-.p1{left:12%}.p2{right:12%}
-#title{position:fixed;top:14px;left:50%;transform:translateX(-50%);padding:8px 13px;border-radius:10px;background:#07111dcc;color:white;font-weight:800;z-index:20;letter-spacing:1px}
-#hint{position:fixed;top:58px;left:50%;transform:translateX(-50%);background:#0009;color:#fff;padding:6px 10px;border-radius:8px;font-size:12px;z-index:20}
-#joy{position:fixed;left:18px;bottom:22px;width:120px;height:120px;border-radius:50%;background:#1118;border:2px solid #fff8;z-index:30}
-#stick{position:absolute;left:35px;top:35px;width:50px;height:50px;border-radius:50%;background:#fff9}
-#look{position:fixed;right:0;top:0;width:58%;height:100%;z-index:25}
-#msg{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:50;background:#101827ee;color:#fff;padding:20px;border-radius:14px;text-align:center;font-weight:bold;display:none}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#9ed4f4;font-family:Arial,sans-serif;touch-action:none}
+#scene{position:fixed;inset:0;overflow:hidden;background:#9ed4f4}
+#sky{position:absolute;inset:0;background:linear-gradient(#7ec4ee 0%,#cdeaff 58%,#cdeaff 58%,#777 58%,#777 100%)}
+#ground{position:absolute;left:-60%;width:220%;height:70%;bottom:-35%;background:#666;transform:rotateX(58deg);transform-origin:center bottom}
+#road{position:absolute;left:50%;bottom:-15%;width:48%;height:70%;transform:translateX(-50%) perspective(500px) rotateX(55deg);background:#555;box-shadow:inset 0 0 0 4px #777}
+.sidewalk{position:absolute;bottom:-8%;width:30%;height:65%;background:#c5c0b8;transform:perspective(500px) rotateX(55deg);transform-origin:bottom}
+.leftwalk{left:-3%}.rightwalk{right:-3%}
+.line{position:absolute;left:50%;bottom:-4%;width:5px;height:48%;background:repeating-linear-gradient(to bottom,#eee 0 35px,transparent 35px 75px);transform:translateX(-50%) perspective(500px) rotateX(52deg);transform-origin:bottom}
+.building{position:absolute;width:180px;height:150px;bottom:32%;background:#d8c6ad;border:3px solid #574f49;box-shadow:12px 14px 18px #0005}
+.building .roof{position:absolute;left:-8px;top:-48px;width:190px;height:55px;background:#784a38;clip-path:polygon(0 100%,50% 0,100% 100%);border:3px solid #51372c}
+.building .door{position:absolute;bottom:0;left:45%;width:42px;height:72px;background:#5b4638;border:3px solid #332b26}
+.building .window{position:absolute;top:28px;width:48px;height:48px;background:#6e9db5;border:5px solid #e9e2d8;box-shadow:inset 0 0 0 2px #344c58}
+.building .w1{left:18px}.building .w2{right:18px}
+.b1{left:3%;transform:scale(.72) perspective(500px) rotateY(18deg);background:#e5d0b3}
+.b2{left:19%;bottom:34%;transform:scale(.55) perspective(500px) rotateY(11deg);background:#d7d7d0}
+.b3{right:19%;bottom:34%;transform:scale(.55) perspective(500px) rotateY(-11deg);background:#e8d7c8}
+.b4{right:3%;transform:scale(.72) perspective(500px) rotateY(-18deg);background:#d6c7df}
+.wall{position:absolute;bottom:30%;height:95px;width:24%;background:#aa9b88;border:3px solid #6e6255}
+.wall.left{left:0}.wall.right{right:0}
+.tree{position:absolute;bottom:36%;width:20px;height:105px;background:#76513b;border-radius:6px}
+.tree:before{content:"";position:absolute;width:95px;height:95px;left:-38px;top:-72px;background:#397343;border-radius:50%;box-shadow:34px 9px 0 #477f46,-27px 14px 0 #2f6338}
+.tl{left:12%}.tr{right:12%}
+.post{position:absolute;bottom:35%;width:8px;height:47%;background:#555}
+.post:before,.post:after{content:"";position:absolute;left:-70px;width:150px;height:4px;background:#444}
+.post:before{top:12%}.post:after{top:19%}
+.pl{left:15%}.pr{right:15%}
+#title{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:30;background:#07111ddd;color:white;padding:8px 13px;border-radius:10px;font-weight:800}
+#hint{position:fixed;top:55px;left:50%;transform:translateX(-50%);z-index:30;background:#0009;color:white;padding:6px 10px;border-radius:8px;font-size:12px}
+#joy{position:fixed;z-index:40;left:18px;bottom:20px;width:118px;height:118px;border-radius:50%;background:#1118;border:2px solid #fff8}
+#stick{position:absolute;left:34px;top:34px;width:48px;height:48px;border-radius:50%;background:#fff}
+#look{position:fixed;z-index:35;right:0;top:0;width:58%;height:100%}
 </style>
 </head>
 <body>
-<div id="world">
- <div class="sky"></div><div class="road"></div><div class="side l"></div><div class="side r"></div><div class="centerline"></div>
- <div class="wall w1"></div><div class="wall w2"></div>
- <div class="house h1"></div><div class="house h2"></div><div class="house h3"></div><div class="house h4"></div>
- <div class="tree t1"></div><div class="tree t2"></div><div class="post p1"></div><div class="post p2"></div>
+<div id="scene">
+ <div id="sky"></div><div id="ground"></div><div id="road"></div>
+ <div class="sidewalk leftwalk"></div><div class="sidewalk rightwalk"></div><div class="line"></div>
+ <div class="wall left"></div><div class="wall right"></div>
+ <div class="building b1"><div class="roof"></div><div class="window w1"></div><div class="window w2"></div><div class="door"></div></div>
+ <div class="building b2"><div class="roof"></div><div class="window w1"></div><div class="window w2"></div><div class="door"></div></div>
+ <div class="building b3"><div class="roof"></div><div class="window w1"></div><div class="window w2"></div><div class="door"></div></div>
+ <div class="building b4"><div class="roof"></div><div class="window w1"></div><div class="window w2"></div><div class="door"></div></div>
+ <div class="tree tl"></div><div class="tree tr"></div><div class="post pl"></div><div class="post pr"></div>
 </div>
-<div id="title">RUA 3D</div><div id="hint">Arraste à direita para olhar • joystick para andar</div>
-<div id="joy"><div id="stick"></div></div><div id="look"></div><div id="msg"></div>
+<div id="title">RUA 3D</div>
+<div id="hint">Arraste à direita para olhar • joystick para andar</div>
+<div id="joy"><div id="stick"></div></div><div id="look"></div>
 <script>
 (function(){
- const world=document.getElementById('world'),joy=document.getElementById('joy'),stick=document.getElementById('stick'),look=document.getElementById('look');
- let rot=0,drag=false,lastX=0,dx=0,dy=0;
+ const scene=document.getElementById('scene'),look=document.getElementById('look'),joy=document.getElementById('joy'),stick=document.getElementById('stick');
+ let yaw=0,drag=false,lastX=0,moveX=0,moveY=0;
  look.addEventListener('pointerdown',e=>{drag=true;lastX=e.clientX;look.setPointerCapture(e.pointerId)});
- look.addEventListener('pointermove',e=>{if(!drag)return;rot+=(e.clientX-lastX)*.12;lastX=e.clientX;world.style.transform='perspective(700px) rotateY('+rot+'deg) scale(1.08)';});
- look.addEventListener('pointerup',()=>drag=false); look.addEventListener('pointercancel',()=>drag=false);
+ look.addEventListener('pointermove',e=>{if(!drag)return;yaw+=(e.clientX-lastX)*.08;lastX=e.clientX;scene.style.transform='perspective(900px) rotateY('+yaw+'deg) scale(1.04)'});
+ look.addEventListener('pointerup',()=>drag=false);look.addEventListener('pointercancel',()=>drag=false);
  let active=false,cx=0,cy=0;
- joy.addEventListener('pointerdown',e=>{active=true;joy.setPointerCapture(e.pointerId);cx=e.clientX;cy=e.clientY});
- joy.addEventListener('pointermove',e=>{if(!active)return;let x=Math.max(-35,Math.min(35,e.clientX-cx)),y=Math.max(-35,Math.min(35,e.clientY-cy));stick.style.transform='translate('+x+'px,'+y+'px)'});
- joy.addEventListener('pointerup',()=>{active=false;stick.style.transform='translate(0,0)'});
- window.addEventListener('error',e=>{document.getElementById('msg').style.display='block';document.getElementById('msg').textContent='Erro de execução: '+e.message});
+ joy.addEventListener('pointerdown',e=>{active=true;cx=e.clientX;cy=e.clientY;joy.setPointerCapture(e.pointerId)});
+ joy.addEventListener('pointermove',e=>{if(!active)return;moveX=Math.max(-38,Math.min(38,e.clientX-cx));moveY=Math.max(-38,Math.min(38,e.clientY-cy));stick.style.transform='translate('+moveX+'px,'+moveY+'px)';});
+ joy.addEventListener('pointerup',()=>{active=false;moveX=moveY=0;stick.style.transform='translate(0,0)'});
 })();
 </script>
-</body></html>
+</body>
+</html>
