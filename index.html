@@ -162,26 +162,30 @@ function house(h){
  wallSeg(h.x+1.08,x2+.28);
 }
 function tree(x,z){
- const base=proj(x,z,0), trunkTop=proj(x,z,3.15);
+ const base=proj(x,z,0), trunkTop=proj(x,z,3.0);
  if(!base||!trunkTop)return;
 
- // Tronco robusto, com uma leve divisão no topo.
- const tw=Math.max(18,base.s*.42);
- line([base,trunkTop],"#60422d",tw);
- const forkL=proj(x-.38,z,3.35),forkR=proj(x+.38,z,3.35);
- if(forkL)line([trunkTop,forkL],"#60422d",Math.max(10,base.s*.18));
- if(forkR)line([trunkTop,forkR],"#60422d",Math.max(4,base.s*.08));
+ // Tronco realmente espesso e proporcional à árvore.
+ const tw=Math.max(14,base.s*.58);
+ line([base,trunkTop],"#5a3d29",tw);
 
- // Copa grande e irregular, construída em camadas.
+ // Galhos grossos entrando na copa.
+ const branchW=Math.max(8,base.s*.20);
+ const left=proj(x-.62,z,3.45), right=proj(x+.62,z,3.45);
+ if(left)line([trunkTop,left],"#5a3d29",branchW);
+ if(right)line([trunkTop,right],"#5a3d29",branchW);
+
+ // Copa larga, irregular e cheia, com vários volumes.
  const blobs=[
-  [-.72,2.95,.78,"#315b35"],[.72,2.95,.78,"#315b35"],
-  [-.48,3.42,.88,"#3b6b3b"],[.48,3.42,.88,"#3b6b3b"],
-  [0,3.65,1.02,"#477d43"],[-.65,3.72,.72,"#477d43"],[.65,3.72,.72,"#477d43"],
-  [0,4.12,.76,"#568c4d"],[-.28,4.32,.52,"#67995a"],[.38,4.22,.55,"#5f9252"]
+  [-.82,2.85,.82,"#315a34"],[.82,2.85,.82,"#315a34"],
+  [-.62,3.35,.98,"#3b6b3b"],[.62,3.35,.98,"#3b6b3b"],
+  [0,3.45,1.12,"#477b42"],[-.72,3.85,.82,"#477b42"],
+  [.72,3.85,.82,"#477b42"],[0,4.05,1.0,"#53884b"],
+  [-.35,4.35,.62,"#649657"],[.42,4.3,.64,"#5d9152"]
  ];
  for(const [ox,oy,r,col] of blobs){
    const q=proj(x+ox,z,oy); if(!q)continue;
-   const R=Math.max(11,q.s*r);
+   const R=Math.max(12,q.s*r);
    ctx.fillStyle=col;
    ctx.beginPath();ctx.arc(q.x,q.y,R,0,Math.PI*2);ctx.fill();
  }
