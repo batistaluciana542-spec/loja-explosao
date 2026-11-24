@@ -5,144 +5,73 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>Rua 3D</title>
 <style>
-*{box-sizing:border-box}
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#87c9ee;font-family:Arial,sans-serif;touch-action:none}
-canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
-#hud{position:fixed;inset:0;pointer-events:none;color:#fff;text-shadow:0 2px 4px #000;z-index:5}
-#title{position:absolute;top:12px;left:50%;transform:translateX(-50%);background:#111b;padding:8px 14px;border-radius:10px;font-weight:800}
-#hint{position:absolute;top:52px;left:50%;transform:translateX(-50%);background:#1119;padding:6px 10px;border-radius:8px;font-size:12px}
-#joy{pointer-events:auto;position:absolute;left:18px;bottom:20px;width:120px;height:120px;border-radius:50%;background:#1118;border:2px solid #fff8}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#9ed7f5;touch-action:none;font-family:Arial}
+#gl{position:fixed;inset:0;width:100%;height:100%;display:block}
+#hud{position:fixed;inset:0;pointer-events:none;color:#fff;text-shadow:0 2px 4px #000}
+#title{position:absolute;top:12px;left:50%;transform:translateX(-50%);background:#111b;padding:8px 14px;border-radius:10px;font-weight:bold}
+#hint{position:absolute;top:52px;left:50%;transform:translateX(-50%);background:#1119;padding:6px 10px;border-radius:8px;font-size:12px;white-space:nowrap}
+#look{position:absolute;right:0;top:0;width:60%;height:100%;pointer-events:auto}
+#joy{position:absolute;left:18px;bottom:20px;width:120px;height:120px;border:2px solid #fff8;border-radius:50%;background:#1118;pointer-events:auto}
 #stick{position:absolute;left:34px;top:34px;width:48px;height:48px;border-radius:50%;background:#fff}
-#look{pointer-events:auto;position:absolute;right:0;top:0;width:58%;height:100%}
 </style>
 </head>
 <body>
-<canvas id="game"></canvas>
+<canvas id="gl"></canvas>
 <div id="hud">
- <div id="title">RUA 3D</div>
- <div id="hint">Arraste à direita para olhar • joystick para andar</div>
- <div id="joy"><div id="stick"></div></div>
- <div id="look"></div>
+<div id="title">RUA 3D</div>
+<div id="hint">Arraste à direita para olhar • joystick para andar</div>
+<div id="look"></div>
+<div id="joy"><div id="stick"></div></div>
 </div>
 <script>
-(function(){
-'use strict';
-const canvas=document.getElementById('game');
-const ctx=canvas.getContext('2d');
-let W=innerWidth,H=innerHeight,dpr=Math.min(devicePixelRatio||1,2);
-function resize(){W=innerWidth;H=innerHeight;canvas.width=Math.floor(W*dpr);canvas.height=Math.floor(H*dpr);canvas.style.width=W+'px';canvas.style.height=H+'px';ctx.setTransform(dpr,0,0,dpr,0,0)}
-addEventListener('resize',resize);resize();
-
-let px=0,pz=8,yaw=0,joyX=0,joyY=0,drag=false,lastX=0;
+(()=> {
+const c=document.getElementById('gl'), gl=c.getContext('webgl',{antialias:true});
+if(!gl){document.getElementById('hint').textContent='WebGL não disponível neste navegador';return}
+const vs='attribute vec3 p;uniform mat4 mvp;uniform vec3 col;varying vec3 v;void main(){gl_Position=mvp*vec4(p,1.0);v=col;}';
+const fs='precision mediump float;varying vec3 v;void main(){gl_FragColor=vec4(v,1.0);}';
+function sh(t,s){let x=gl.createShader(t);gl.shaderSource(x,s);gl.compileShader(x);return x}
+const pr=gl.createProgram();gl.attachShader(pr,sh(gl.VERTEX_SHADER,vs));gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,fs));gl.linkProgram(pr);gl.useProgram(pr);
+const P=gl.getAttribLocation(pr,'p'),M=gl.getUniformLocation(pr,'mvp'),C=gl.getUniformLocation(pr,'col');
+const verts=new Float32Array([
+-1,0,-1, 1,0,-1, 1,1,-1,-1,1,-1, -1,0,1,1,0,1,1,1,1,-1,1,1,
+-1,0,-1,-1,1,-1,-1,1,1,-1,0,1, 1,0,-1,1,1,-1,1,1,1,1,0,1,
+-1,1,-1,1,1,-1,1,1,1,-1,1,1, -1,0,-1,1,0,-1,1,0,1,-1,0,1]);
+const idx=new Uint16Array([0,1,2,0,2,3,4,6,5,4,7,6,8,9,10,8,10,11,12,14,13,12,15,14,16,17,18,16,18,19,20,22,21,20,23,22]);
+const vb=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,vb);gl.bufferData(gl.ARRAY_BUFFER,verts,gl.STATIC_DRAW);
+const ib=gl.createBuffer();gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,ib);gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,idx,gl.STATIC_DRAW);
+gl.enableVertexAttribArray(P);gl.vertexAttribPointer(P,3,gl.FLOAT,false,0,0);
+function matMul(a,b){let r=new Float32Array(16);for(let i=0;i<4;i++)for(let j=0;j<4;j++)r[i*4+j]=a[i*4]*b[j]+a[i*4+1]*b[4+j]+a[i*4+2]*b[8+j]+a[i*4+3]*b[12+j];return r}
+function perspective(f,a,n,fz){let t=1/Math.tan(f/2);return new Float32Array([t/a,0,0,0,0,t,0,0,0,0,(fz+n)/(n-fz),-1,0,0,2*fz*n/(n-fz),0])}
+function lookAt(ex,ey,ez,cx,cy,cz){let fx=cx-ex,fy=cy-ey,fz=cz-ez,l=Math.hypot(fx,fy,fz);fx/=l;fy/=l;fz/=l;let rx=fz,ry=0,rz=-fx,l2=Math.hypot(rx,rz);rx/=l2;rz/=l2;let ux=ry*fz-rz*fy,uy=rz*fx-rx*fz,uz=rx*fy-ry*fx;return new Float32Array([rx,ux,-fx,0,ry,uy,-fy,0,rz,uz,-fz,0,-(rx*ex+ry*ey+rz*ez),-(ux*ex+uy*ey+uz*ez),fx*ex+fy*ey+fz*ez,1])}
+function cube(x,y,z,sx,sy,sz,col){let S=new Float32Array([sx/2,sy/2,sz/2]);let model=new Float32Array([S[0],0,0,0,0,S[1],0,0,0,0,S[2],0,x,y,z,1]);let mvp=matMul(VP,model);gl.uniformMatrix4fv(M,false,mvp);gl.uniform3fv(C,col);gl.drawElements(gl.TRIANGLES,36,gl.UNSIGNED_SHORT,0)}
+let W=innerWidth,H=innerHeight,px=0,py=1.7,pz=10,yaw=0,pitch=0,joyX=0,joyY=0;
+function resize(){W=innerWidth;H=innerHeight;c.width=W*devicePixelRatio;c.height=H*devicePixelRatio;gl.viewport(0,0,c.width,c.height)}addEventListener('resize',resize);resize();
 const houses=[
- {x:-8,z:2,w:5,h:3.2,d:4,c:'#e7d0ad',r:'#8b513c'},
- {x:-9,z:-5,w:5.5,h:3.7,d:4.5,c:'#d8d8d0',r:'#6b5547'},
- {x:-8,z:-12,w:4.5,h:3,d:4,c:'#e6c7bb',r:'#7c4b3d'},
- {x:8,z:2,w:5,h:3.2,d:4,c:'#d9c7df',r:'#75525b'},
- {x:9,z:-5,w:5.5,h:3.7,d:4.5,c:'#dfd2b5',r:'#6d5040'},
- {x:8,z:-12,w:4.5,h:3,d:4,c:'#cbd7c7',r:'#596b55'}
+[-8,2,5,3.5,4,[.82,.68,.48]],[-9,-5,5.5,4,4.5,[.72,.72,.68]],[-8,-12,4.5,3.2,4,[.78,.55,.48]],
+[8,2,5,3.5,4,[.62,.52,.70]],[9,-5,5.5,4,4.5,[.78,.70,.52]],[8,-12,4.5,3.2,4,[.55,.68,.55]]
 ];
-const trees=[[-5,0],[-6,-8],[5,-2],[6,-10],[-10,-17],[10,-18]];
-const posts=[[-5,5],[5,5],[-5,-10],[5,-10]];
-
-function project(x,y,z){
- const dx=x-px,dz=z-pz;
- const co=Math.cos(yaw),si=Math.sin(yaw);
- const X=dx*co-dz*si;
- const Z=dx*si+dz*co;
- if(Z<=0.2)return null;
- const f=Math.min(W,H)*0.92;
- return {x:W/2+X*f/Z,y:H/2-y*f/Z,scale:f/Z,z:Z};
+function frame(){
+ gl.clearColor(.49,.75,.91,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.enable(gl.DEPTH_TEST);
+ const dir=[Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),-Math.cos(yaw)*Math.cos(pitch)];
+ const V=lookAt(px,py,pz,px+dir[0],py+dir[1],pz+dir[2]);VP=matMul(perspective(Math.PI/3,W/H,.05,300),V);
+ cube(0,-.08,-30,12,.15,80,[.28,.28,.28]);cube(-8,-.01,-30,4,.12,80,[.68,.65,.58]);cube(8,-.01,-30,4,.12,80,[.68,.65,.58]);
+ for(const h of houses){cube(h[0],h[3]/2,h[1],h[2],h[3],h[4],h[5]);cube(h[0],h[3]+.15,h[1],h[2]+.25,.3,h[4]+.25,[.38,.23,.16]);cube(h[0],.9,h[1]-h[4]/2-.05,h[2]*.25,1.8,.12,[.25,.18,.14]);}
+ for(let z=5;z>-35;z-=10){cube(-5,2.5,z,.12,5,.12,[.3,.3,.3]);cube(5,2.5,z,.12,5,.12,[.3,.3,.3]);}
+ requestAnimationFrame(frame)
 }
-function poly(points,fill,stroke){
- ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();
- ctx.fillStyle=fill;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=1;ctx.stroke()}
-}
-function box(o){
- const base=project(o.x,0,o.z),top=project(o.x,o.h,o.z);
- if(!base||!top)return;
- const s=top.scale;
- const hw=o.w*s/2,hd=o.d*s/2;
- const p1=project(o.x-o.w/2,0,o.z),p2=project(o.x+o.w/2,0,o.z);
- const t1=project(o.x-o.w/2,o.h,o.z),t2=project(o.x+o.w/2,o.h,o.z);
- if(!p1||!p2||!t1||!t2)return;
- poly([t1,t2,p2,p1],o.c,'#55483f');
- const doorW=Math.max(4,o.w*s*.16),doorH=Math.max(8,o.h*s*.48);
- poly([
-  {x:(t1.x+t2.x)/2-doorW/2,y:p1.y},
-  {x:(t1.x+t2.x)/2+doorW/2,y:p1.y},
-  {x:(t1.x+t2.x)/2+doorW/2,y:p1.y-doorH},
-  {x:(t1.x+t2.x)/2-doorW/2,y:p1.y-doorH}
- ],'#5a4336');
- const winW=Math.max(5,o.w*s*.19),winH=Math.max(5,o.h*s*.22);
- for(const side of [-1,1]){
-   const cx=(t1.x+t2.x)/2+side*o.w*s*.27;
-   poly([{x:cx-winW/2,y:p1.y-o.h*s*.52},{x:cx+winW/2,y:p1.y-o.h*s*.52},{x:cx+winW/2,y:p1.y-o.h*s*.30},{x:cx-winW/2,y:p1.y-o.h*s*.30}], '#79aabd','#eee');
- }
- // roof
- const roofTop=project(o.x,o.h+.8,o.z);
- if(roofTop){
-   poly([{x:t1.x,y:t1.y},{x:roofTop.x,y:roofTop.y},{x:t2.x,y:t2.y}],o.r,'#4c372e');
- }
-}
-function tree(x,z){
- const b=project(x,0,z),t=project(x,2.7,z);
- if(!b||!t)return;
- const s=t.scale;
- ctx.fillStyle='#70513d';ctx.fillRect(b.x-3*s,b.y-2.7*s,6*s,2.7*s);
- ctx.fillStyle='#3f7540';ctx.beginPath();ctx.arc(t.x,t.y,1.15*s,0,Math.PI*2);ctx.fill();
- ctx.fillStyle='#4e8748';ctx.beginPath();ctx.arc(t.x-.65*s,t.y+.25*s,.8*s,0,Math.PI*2);ctx.fill();
- ctx.beginPath();ctx.arc(t.x+.65*s,t.y+.25*s,.8*s,0,Math.PI*2);ctx.fill();
-}
-function post(x,z){
- const b=project(x,0,z),t=project(x,5,z);
- if(!b||!t)return;
- ctx.strokeStyle='#555';ctx.lineWidth=Math.max(2,t.scale*.08);ctx.beginPath();ctx.moveTo(b.x,b.y);ctx.lineTo(t.x,t.y);ctx.stroke();
- const a=project(x-1.8,4.5,z),q=project(x+1.8,4.5,z);
- if(a&&q){ctx.lineWidth=Math.max(1,t.scale*.025);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(q.x,q.y);ctx.stroke()}
-}
-function draw(){
- ctx.clearRect(0,0,W,H);
- const sky=ctx.createLinearGradient(0,0,0,H*.62);sky.addColorStop(0,'#72bce8');sky.addColorStop(1,'#d5edfa');ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);
- ctx.fillStyle='#6d6d6d';ctx.fillRect(0,H*.52,W,H*.48);
- // road perspective
- const van={x:W/2,y:H*.52};
- poly([{x:W*.38,y:H},{x:W*.62,y:H},{x:W*.54,y:H*.52},{x:W*.46,y:H*.52}],'#4f4f4f');
- // sidewalks
- poly([{x:0,y:H},{x:W*.38,y:H},{x:W*.46,y:H*.52},{x:0,y:H*.52}],'#c5c0b7');
- poly([{x:W*.62,y:H},{x:W,y:H},{x:W,y:H*.52},{x:W*.54,y:H*.52}],'#c5c0b7');
- // center line
- ctx.strokeStyle='#ddd';ctx.lineWidth=3;ctx.setLineDash([25,30]);ctx.beginPath();ctx.moveTo(W/2,H);ctx.lineTo(W/2,H*.52);ctx.stroke();ctx.setLineDash([]);
- const objs=[];
- houses.forEach((h,i)=>objs.push({z:(h.z-pz),type:'h',h,i}));
- trees.forEach((t,i)=>objs.push({z:t[1]-pz,type:'t',i}));
- posts.forEach((p,i)=>objs.push({z:p[1]-pz,type:'p',i}));
- objs.sort((a,b)=>a.z-b.z);
- for(const o of objs){
-   if(o.type==='h')box(houses[o.i]);
-   else if(o.type==='t')tree(trees[o.i][0],trees[o.i][1]);
-   else post(posts[o.i][0],posts[o.i][1]);
- }
-}
-function loop(){draw();requestAnimationFrame(loop)}loop();
-
-function move(){
- const speed=.09;
- const fx=Math.sin(yaw),fz=Math.cos(yaw);
- px += (-joyY*speed)*fx + (joyX*speed)*fz;
- pz += (-joyY*speed)*fz - (joyX*speed)*fx;
-}
-setInterval(move,16);
-
+let VP;
+function move(){let speed=.075,fx=Math.sin(yaw),fz=-Math.cos(yaw);px+=(-joyY*fx+joyX*Math.cos(yaw))*speed;pz+=(-joyY*fz-joyX*Math.sin(yaw))*speed}
+setInterval(move,16);frame();
 const look=document.getElementById('look'),joy=document.getElementById('joy'),stick=document.getElementById('stick');
-look.addEventListener('pointerdown',e=>{drag=true;lastX=e.clientX;look.setPointerCapture(e.pointerId)});
-look.addEventListener('pointermove',e=>{if(!drag)return;yaw+=(e.clientX-lastX)*.006;lastX=e.clientX});
-look.addEventListener('pointerup',()=>drag=false);look.addEventListener('pointercancel',()=>drag=false);
+let drag=false,lastX=0,lastY=0;
+look.onpointerdown=e=>{drag=true;lastX=e.clientX;lastY=e.clientY;look.setPointerCapture(e.pointerId)};
+look.onpointermove=e=>{if(!drag)return;yaw+=(e.clientX-lastX)*.006;pitch=Math.max(-.65,Math.min(.55,pitch-(e.clientY-lastY)*.004));lastX=e.clientX;lastY=e.clientY};
+look.onpointerup=look.onpointercancel=()=>drag=false;
 let active=false,cx=0,cy=0;
-joy.addEventListener('pointerdown',e=>{active=true;cx=e.clientX;cy=e.clientY;joy.setPointerCapture(e.pointerId)});
-joy.addEventListener('pointermove',e=>{if(!active)return;joyX=Math.max(-1,Math.min(1,(e.clientX-cx)/38));joyY=Math.max(-1,Math.min(1,(e.clientY-cy)/38));stick.style.transform='translate('+joyX*38+'px,'+joyY*38+'px)'});
+joy.onpointerdown=e=>{active=true;cx=e.clientX;cy=e.clientY;joy.setPointerCapture(e.pointerId)};
+joy.onpointermove=e=>{if(!active)return;joyX=Math.max(-1,Math.min(1,(e.clientX-cx)/38));joyY=Math.max(-1,Math.min(1,(e.clientY-cy)/38));stick.style.transform='translate('+joyX*38+'px,'+joyY*38+'px)'};
 function reset(){active=false;joyX=joyY=0;stick.style.transform='translate(0,0)'}
-joy.addEventListener('pointerup',reset);joy.addEventListener('pointercancel',reset);
+joy.onpointerup=joy.onpointercancel=reset;
 })();
 </script>
 </body>
