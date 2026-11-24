@@ -93,116 +93,138 @@ function ground(){
    muro frontal e pequeno jardim. Nada de fachada solta. */
 function house(h){
  const x1=h.x-h.w/2,x2=h.x+h.w/2,z1=h.z-h.d/2,z2=h.z+h.d/2;
- const Hh=h.h, roofH=Hh+.9;
-
- // Projeção própria da casa, mas sem empilhar dezenas de elementos que
- // acabam se cobrindo. A fachada é construída por último e fica bem visível.
+ const Hh=h.h,roofH=Hh+.9;
  function hp(x,z,y=0){return proj(x,z,y)}
- function quad(xa,xb,z,y1,y2,fill,stroke){
-   const p1=hp(xa,z,y1),p2=hp(xb,z,y1),p3=hp(xb,z,y2),p4=hp(xa,z,y2);
-   poly([p1,p2,p3,p4],fill);
-   if(stroke) line([p1,p2,p3,p4,p1],stroke,Math.max(1,(p1?.s||1)*.014));
-   return {p1,p2,p3,p4};
- }
- function boxFront(x,z,y,w,h,fill,stroke){
-   return quad(x-w/2,x+w/2,z,y-h/2,y+h/2,fill,stroke);
+ function face(p,fill,stroke){poly(p,fill);if(stroke)line([...p,p[0]],stroke,Math.max(1,(p[0]?.s||1)*.012))}
+ function wallFace(za,zb,fill){
+   const p=[hp(x1,za,0),hp(x2,za,0),hp(x2,za,Hh),hp(x1,za,Hh)];
+   face(p,fill,shade(h.trim,-25)); return p;
  }
 
- // 1) VOLUME REAL: quatro paredes, desenhadas antes dos detalhes.
- const p0=hp(x1,z1,0),p1=hp(x2,z1,0),p2=hp(x2,z2,0),p3=hp(x1,z2,0);
- const p4=hp(x1,z1,Hh),p5=hp(x2,z1,Hh),p6=hp(x2,z2,Hh),p7=hp(x1,z2,Hh);
+ // VOLUME: todas as paredes, piso e topo ficam separados visualmente.
+ const A=hp(x1,z1,0),B=hp(x2,z1,0),C=hp(x2,z2,0),D=hp(x1,z2,0);
+ const E=hp(x1,z1,Hh),F=hp(x2,z1,Hh),G=hp(x2,z2,Hh),I=hp(x1,z2,Hh);
  const faces=[
-  {p:[p0,p1,p5,p4],d:(p0?.d||0)+(p1?.d||0),c:h.wall},
-  {p:[p1,p2,p6,p5],d:(p1?.d||0)+(p2?.d||0),c:h.side},
-  {p:[p2,p3,p7,p6],d:(p2?.d||0)+(p3?.d||0),c:shade(h.side,-28)},
-  {p:[p3,p0,p4,p7],d:(p3?.d||0)+(p0?.d||0),c:shade(h.side,-14)}
+  {p:[A,B,F,E],d:(A?.d||0)+(B?.d||0),c:h.wall},
+  {p:[B,C,G,F],d:(B?.d||0)+(C?.d||0),c:h.side},
+  {p:[C,D,I,G],d:(C?.d||0)+(D?.d||0),c:shade(h.side,-30)},
+  {p:[D,A,E,I],d:(D?.d||0)+(A?.d||0),c:shade(h.side,-12)}
  ];
- faces.sort((u,v)=>v.d-u.d);
- faces.forEach(f=>poly(f.p,f.c));
+ faces.sort((u,v)=>v.d-u.d).forEach(f=>face(f.p,f.c));
 
- // 2) TELHADO GRANDE, simples e sólido.
- const roofA=hp(x1-.35,z1-.3,Hh),roofB=hp(x2+.35,z1-.3,Hh);
- const roofC=hp(h.x,z1-.3,roofH);
- const roofD=hp(x2+.35,z2+.3,Hh),roofE=hp(h.x,z2+.3,roofH),roofF=hp(x1-.35,z2+.3,Hh);
- const roofFaces=[
-  {p:[roofA,roofB,roofC],c:shade(h.roof,12),d:(roofA?.d||0)+(roofB?.d||0)},
-  {p:[roofC,roofB,roofD,roofE],c:h.roof,d:(roofB?.d||0)+(roofD?.d||0)},
-  {p:[roofF,roofE,roofC,roofA],c:shade(h.roof,-18),d:(roofF?.d||0)+(roofA?.d||0)},
-  {p:[roofE,roofD,roofF],c:shade(h.roof,-10),d:(roofE?.d||0)+(roofD?.d||0)}
- ];
- roofFaces.sort((u,v)=>v.d-u.d).forEach(f=>poly(f.p,f.c));
-
- // 3) ESCOLHE A FACHADA QUE ESTÁ DE FRENTE PARA A CÂMERA.
- const q=cam(h.x,h.z);
- const front=q.f>=0;
- const fz=front?z1-.055:z2+.055;
-
- // Parede frontal limpa por cima do volume.
- quad(x1,x2,fz,0,Hh,h.wall,shade(h.trim,-25));
-
- // Faixa de acabamento e rodapé.
- quad(x1+.08,x2-.08,fz,Hh-.25,Hh-.08,shade(h.wall,12),h.trim);
- quad(x1,x2,fz,.03,.22,shade(h.wall,-20),shade(h.trim,-25));
-
- // 4) VARANDA / ENTRADA: um bloco grande e claramente visível.
- const porchX=h.x-.75;
- quad(porchX-.9,porchX+.9,fz-.16,.05,.18,shade(h.trim,-20),shade(h.trim,-35));
- quad(porchX-1.02,porchX+1.02,fz-.22,.18,.28,shade(h.trim,-8),shade(h.trim,-30));
- quad(porchX-1.05,porchX+1.05,fz-.18,2.02,2.16,shade(h.roof,-5),shade(h.roof,-30));
-
- // 5) PORTA MUITO MAIOR.
- boxFront(porchX,fz,1.02,.95,1.85,h.door,shade(h.trim,-25));
- const doorTop=hp(porchX,fz,1.91);
- if(doorTop){line([hp(porchX-.46,fz,1.91),hp(porchX+.46,fz,1.91)],h.trim,Math.max(2,doorTop.s*.018))}
- const knob=hp(porchX+.28,fz,1.02);
- if(knob){ctx.fillStyle="#d7b65c";ctx.beginPath();ctx.arc(knob.x,knob.y,Math.max(2,knob.s*.025),0,Math.PI*2);ctx.fill();}
-
- // 6) DUAS JANELAS GRANDES, separadas da porta.
- const wx=h.x+.92;
- const w1=boxFront(wx,fz,2.05,1.35,.92,h.win,h.trim);
- const w2=boxFront(h.x-2.05,fz,2.05,1.05,.92,h.win,h.trim);
- function cross(w){
-   const mx=(w.p1.x+w.p2.x)/2, my=(w.p1.y+w.p3.y)/2;
-   line([{x:mx,y:w.p1.y},{x:mx,y:w.p3.y}],shade(h.trim,-38),Math.max(2,w.p1.s*.016));
-   line([{x:w.p1.x,y:my},{x:w.p2.x,y:my}],shade(h.trim,-38),Math.max(2,w.p1.s*.016));
+ // Reforço de profundidade: beirais e linhas verticais nas quinas.
+ for(const [x,z] of [[x1,z1],[x2,z1],[x2,z2],[x1,z2]]){
+   const p0=hp(x,z,0),p1=hp(x,z,Hh);
+   if(p0&&p1)line([p0,p1],shade(h.side,-38),Math.max(2,p0.s*.018));
  }
- cross(w1);cross(w2);
 
- // 7) GRADE / JARDIM BEM MARCADO.
- if(h.style===0||h.style===3){
-   const gx=h.x+2.05;
-   boxFront(gx,fz,.82,1.25,1.18,h.gate||"#4f4c48","#292827");
+ // TELHADO DE DUAS ÁGUAS com espessura.
+ const e=.42;
+ const r1=hp(x1-e,z1-e,Hh),r2=hp(x2+e,z1-e,Hh),peak1=hp(h.x,z1-e,roofH);
+ const r3=hp(x2+e,z2+e,Hh),peak2=hp(h.x,z2+e,roofH),r4=hp(x1-e,z2+e,Hh);
+ const roof=[
+  {p:[r1,r2,peak1],d:(r1?.d||0)+(r2?.d||0),c:shade(h.roof,15)},
+  {p:[peak1,r2,r3,peak2],d:(r2?.d||0)+(r3?.d||0),c:h.roof},
+  {p:[r4,peak2,peak1,r1],d:(r4?.d||0)+(r1?.d||0),c:shade(h.roof,-20)},
+  {p:[peak2,r3,r4],d:(peak2?.d||0)+(r3?.d||0),c:shade(h.roof,-8)}
+ ];
+ roof.sort((u,v)=>v.d-u.d).forEach(f=>face(f.p,f.c));
+ line([r1,r2],shade(h.roof,-40),Math.max(2,r1.s*.025));
+ line([r2,r3],shade(h.roof,-45),Math.max(2,r2.s*.02));
+
+ // FACHADA: painel recuado, para não parecer uma textura colada.
+ const q=cam(h.x,h.z),front=q.f>=0,fz=front?z1-.065:z2+.065,back=fz+(front?-.11:.11);
+ const fx=[hp(x1,fz,0),hp(x2,fz,0),hp(x2,fz,Hh),hp(x1,fz,Hh)];
+ face(fx,h.wall,shade(h.trim,-30));
+
+ // Faixa de base e topo.
+ face([hp(x1+.08,fz,.02),hp(x2-.08,fz,.02),hp(x2-.08,fz,.28),hp(x1+.08,fz,.28)],shade(h.wall,-22),h.trim);
+ face([hp(x1+.08,fz,Hh-.25),hp(x2-.08,fz,Hh-.25),hp(x2-.08,fz,Hh-.06),hp(x1+.08,fz,Hh-.06)],shade(h.wall,12),h.trim);
+
+ // Pequeno recuo central da entrada: cria uma caixa real.
+ const px=h.x-.78, pw=1.9, pd=0.55;
+ const pFront=fz, pBack=fz+(front?pd:-pd);
+ const pa=[hp(px-pw/2,pFront,.08),hp(px+pw/2,pFront,.08),hp(px+pw/2,pFront,2.18),hp(px-pw/2,pFront,2.18)];
+ const pb=[hp(px-pw/2,pBack,.08),hp(px+pw/2,pBack,.08),hp(px+pw/2,pBack,2.18),hp(px-pw/2,pBack,2.18)];
+ const side1=[pa[0],pb[0],pb[3],pa[3]],side2=[pb[1],pa[1],pa[2],pb[2]];
+ face(side1,shade(h.wall,-18),shade(h.trim,-30));
+ face(side2,shade(h.wall,-30),shade(h.trim,-30));
+ face(pa,shade(h.wall,5),h.trim);
+
+ // Degraus projetados para fora.
+ const stepZ=fz+(front?-.38:.38);
+ for(let k=0;k<2;k++){
+   const zz=stepZ+(front?-k*.16:k*.16);
+   const aa=hp(px-1.0,zz,.03+k*.10),bb=hp(px+1.0,zz,.03+k*.10);
+   const cc=hp(px+1.0,zz+(front?.18:-.18),.03+k*.10),dd=hp(px-1.0,zz+(front?.18:-.18),.03+k*.10);
+   face([aa,bb,cc,dd],shade(h.trim,-12),shade(h.trim,-35));
+ }
+
+ // PORTA recuada dentro do volume da entrada.
+ const doorZ=fz+(front?-.09:.09);
+ const d1=hp(px-.48,doorZ,.28),d2=hp(px+.48,doorZ,.28),d3=hp(px+.48,doorZ,1.95),d4=hp(px-.48,doorZ,1.95);
+ face([d1,d2,d3,d4],h.door,shade(h.trim,-35));
+ const knob=hp(px+.28,doorZ,1.02);
+ if(knob){ctx.fillStyle="#d8b65d";ctx.beginPath();ctx.arc(knob.x,knob.y,Math.max(2,knob.s*.024),0,Math.PI*2);ctx.fill();}
+
+ // JANELAS com moldura em 3D: moldura, vidro recuado e divisórias.
+ function window3D(cx,cy,w,hh){
+   const z0=fz+(front?-.08:.08);
+   const outer=[hp(cx-w/2,z0,cy-hh/2),hp(cx+w/2,z0,cy-hh/2),hp(cx+w/2,z0,cy+hh/2),hp(cx-w/2,z0,cy+hh/2)];
+   face(outer,h.trim,shade(h.trim,-35));
+   const inset=.09;
+   const inner=[hp(cx-w/2+inset,z0+(front?.055:-.055),cy-hh/2+inset),hp(cx+w/2-inset,z0+(front?.055:-.055),cy-hh/2+inset),hp(cx+w/2-inset,z0+(front?.055:-.055),cy+hh/2-inset),hp(cx-w/2+inset,z0+(front?.055:-.055),cy+hh/2-inset)];
+   face(inner,h.win,null);
+   const mx=hp(cx,z0+(front?.065:-.065),cy),top=hp(cx,z0+(front?.065:-.065),cy+hh/2-.1),bot=hp(cx,z0+(front?.065:-.065),cy-hh/2+.1);
+   const l=hp(cx-w/2+.08,z0+(front?.065:-.065),cy),rr=hp(cx+w/2-.08,z0+(front?.065:-.065),cy);
+   if(mx&&top&&bot)line([top,bot],shade(h.trim,-42),Math.max(2,mx.s*.018));
+   if(mx&&l&&rr)line([l,rr],shade(h.trim,-42),Math.max(2,mx.s*.018));
+   // peitoril saliente
+   const sy=cy-hh/2-.08;
+   face([hp(cx-w/2-.04,z0,sy),hp(cx+w/2+.04,z0,sy),hp(cx+w/2+.04,z0,sy+.10),hp(cx-w/2-.04,z0,sy+.10)],shade(h.trim,-18),shade(h.trim,-35));
+ }
+ window3D(h.x+.88,2.05,1.45,.95);
+ window3D(h.x-2.05,2.02,1.08,.88);
+
+ // Varanda superior em alguns estilos para quebrar a repetição.
+ if(h.style===1||h.style===3){
+   const bx=h.x+.65, bz=fz+(front?-.20:.20), y=2.55;
+   const deck=[hp(bx-1.45,bz,.02),hp(bx+1.45,bz,.02),hp(bx+1.45,bz,.16),hp(bx-1.45,bz,.16)];
+   face(deck,shade(h.trim,-10),shade(h.trim,-35));
    for(let k=-2;k<=2;k++){
-     const xx=gx+k*.22;
-     line([hp(xx,fz,.32),hp(xx,fz,1.42)],"#242424",Math.max(2,(hp(xx,fz,1)?.s||1)*.012));
+     const xx=bx+k*.55;
+     line([hp(xx,bz,.15),hp(xx,bz,1.0)],shade(h.trim,-40),Math.max(2,(hp(xx,bz,1)?.s||1)*.025));
    }
- }else{
-   const bx=wx;
-   boxFront(bx,fz,1.43,1.48,.16,"#714b36","#4b3427");
-   for(let k=-3;k<=3;k++){
-     const fl=hp(bx+k*.19,fz,1.63);
-     if(fl){
-       ctx.fillStyle=k%2?"#4e8147":"#6b9a55";
-       ctx.beginPath();ctx.arc(fl.x,fl.y,Math.max(2,fl.s*.045),0,Math.PI*2);ctx.fill();
-     }
-   }
+   line([hp(bx-1.45,bz,1),hp(bx+1.45,bz,1)],shade(h.trim,-35),Math.max(2,(hp(bx,bz,1)?.s||1)*.025));
  }
 
- // 8) PILARES ALTOS, que deixam a entrada com aparência de casa e não de cubo.
- for(const xx of [x1+.18,x2-.18]){
-   const a=hp(xx,fz-.05,.25), b=hp(xx,fz-.05,1.72);
-   if(a&&b) line([a,b],h.trim,Math.max(4,a.s*.065));
+ // MURO frontal afastado da casa: reforça a leitura de profundidade.
+ const mz=fz+(front?-.72:.72);
+ function lowWall(aa,bb){
+   const p1=hp(aa,mz,0),p2=hp(bb,mz,0),p3=hp(bb,mz,.58),p4=hp(aa,mz,.58);
+   face([p1,p2,p3,p4],shade(h.wall,-32),shade(h.trim,-38));
+ }
+ lowWall(x1-.35,h.x-1.55); lowWall(h.x+1.55,x2+.35);
+ for(const xx of [x1-.1,x2+.1]){
+   const p1=hp(xx,mz,.42),p2=hp(xx,mz,1.55);
+   if(p1&&p2)line([p1,p2],h.trim,Math.max(4,p1.s*.07));
  }
 
- // 9) PEQUENOS VASOS, somente dois e bem definidos.
- for(const xx of [x1+.48,x2-.48]){
-   const p=hp(xx,fz-.08,.38), leaf=hp(xx,fz-.08,.72);
-   if(p){
-     ctx.fillStyle="#86593d";ctx.beginPath();ctx.arc(p.x,p.y,Math.max(4,p.s*.075),0,Math.PI*2);ctx.fill();
-   }
-   if(leaf){
-     ctx.fillStyle="#4d7c43";ctx.beginPath();ctx.arc(leaf.x,leaf.y,Math.max(5,leaf.s*.105),0,Math.PI*2);ctx.fill();
-   }
+ // Portão/gate com profundidade própria.
+ const gx=h.style===0||h.style===3?h.x+2.0:h.x-2.05;
+ const gz=mz+(front?-.05:.05);
+ const gp1=hp(gx-.62,gz,.08),gp2=hp(gx+.62,gz,.08),gp3=hp(gx+.62,gz,1.25),gp4=hp(gx-.62,gz,1.25);
+ face([gp1,gp2,gp3,gp4],h.gate||"#4e4b47","#292827");
+ for(let k=-2;k<=2;k++){
+   const xx=gx+k*.22;
+   line([hp(xx,gz,.18),hp(xx,gz,1.18)],"#252525",Math.max(2,(hp(xx,gz,.7)?.s||1)*.015));
+ }
+
+ // Jardim simples, com volumes separados.
+ for(const xx of [x1+.45,x2-.45]){
+   const p=hp(xx,mz-.04,.35),leaf=hp(xx,mz-.04,.72);
+   if(p){ctx.fillStyle="#86593d";ctx.beginPath();ctx.arc(p.x,p.y,Math.max(4,p.s*.075),0,Math.PI*2);ctx.fill();}
+   if(leaf){ctx.fillStyle="#4f8147";ctx.beginPath();ctx.arc(leaf.x,leaf.y,Math.max(5,leaf.s*.11),0,Math.PI*2);ctx.fill();}
  }
 }
 
