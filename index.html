@@ -17,7 +17,7 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#9fc9df;tou
 </head>
 <body>
 <canvas id="game"></canvas>
-<div id="loading">CARREGANDO MOTOR 3D...<br><small style="opacity:.7">tentando carregar Three.js de vários servidores</small></div>
+<div id="loading">CARREGANDO MOTOR 3D LOCAL...</div>
 <div id="hud">RUA 3D • THREE.JS</div>
 <div id="look"></div>
 <div id="joy"><div id="knob"></div></div>
@@ -27,17 +27,11 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#9fc9df;tou
 'use strict';
 const loading=document.getElementById('loading'),err=document.getElementById('err');
 function fail(e){loading.style.display='none';err.style.display='block';err.textContent='ERRO DO MOTOR 3D:\n'+(e&&e.stack||e)}
-function loadThree(urls,i){
+function loadThree(){
   if(window.THREE){start();return}
-  if(i>=urls.length){fail('Three.js não pôde ser baixado.\nA versão atual precisa de um arquivo local do Three.js para funcionar sem CDN.');return}
-  const s=document.createElement('script');
-  s.src=urls[i];
-  s.async=false;
-  s.onload=()=>{ if(window.THREE) start(); else loadThree(urls,i+1); };
-  s.onerror=()=>loadThree(urls,i+1);
-  document.head.appendChild(s);
-  setTimeout(()=>{if(!window.THREE) {try{s.remove()}catch(e){} loadThree(urls,i+1)}},7000);
+  fail('Three.js externo não carregou.\nVamos usar o motor local para evitar bloqueio de CDN.');
 }
+
 function start(){
 try{
 const scene=new THREE.Scene();
@@ -98,13 +92,7 @@ camera.position.y=1.7;renderer.render(scene,camera);requestAnimationFrame(loop)}
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight,false)});
 requestAnimationFrame(loop);
 }catch(e){fail(e)}
-loadThree([
-'https://raw.githubusercontent.com/mrdoob/three.js/r181/build/three.min.js',
-'https://threejs.org/build/three.min.js',
-'https://unpkg.com/three@0.181.1/build/three.min.js',
-'https://cdn.jsdelivr.net/npm/three@0.181.1/build/three.min.js',
-'https://cdnjs.cloudflare.com/ajax/libs/three.js/r181/three.min.js'
-],0);
+loadThree();
 })();
 </script>
 </body></html>
