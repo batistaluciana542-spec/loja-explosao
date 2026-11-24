@@ -17,7 +17,7 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#9fc9df;tou
 </head>
 <body>
 <canvas id="game"></canvas>
-<div id="loading">CARREGANDO MOTOR 3D LOCAL...</div>
+
 <div id="hud">RUA 3D • THREE.JS</div>
 <div id="look"></div>
 <div id="joy"><div id="knob"></div></div>
@@ -29,7 +29,7 @@ const loading=document.getElementById('loading'),err=document.getElementById('er
 function fail(e){loading.style.display='none';err.style.display='block';err.textContent='ERRO DO MOTOR 3D:\n'+(e&&e.stack||e)}
 function loadThree(){
   if(window.THREE){start();return}
-  fail('Three.js externo não carregou.\nVamos usar o motor local para evitar bloqueio de CDN.');
+  fail('O motor 3D não carregou.');
 }
 
 function start(){
