@@ -273,7 +273,6 @@ const renderObjects=[];
 for(const h of houses)renderObjects.push({type:0,ref:h,x:h.x,z:h.z,d:0});
 for(const v of trees)renderObjects.push({type:1,ref:v,x:v[0],z:v[1],d:0});
 for(const v of poles)renderObjects.push({type:2,ref:v,x:v[0],z:v[1],d:0});
-for(const n of npcs)renderObjects.push({type:3,ref:n,x:n.x,z:n.z,d:0});
 let renderLast=0;
 function render(t){
  if(t-renderLast>=33){
