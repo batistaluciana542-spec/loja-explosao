@@ -1,253 +1,121 @@
-<!doctype html>
-<html lang="pt-BR">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<!doctype html><html lang="pt-BR"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Rua 3D</title>
 <style>
-*{box-sizing:border-box}
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#8fc5e2;touch-action:none}
-body{font-family:Arial,sans-serif}
-canvas{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#91c8e2;touch-action:none;font-family:Arial}
+canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
 #look{position:fixed;right:0;top:0;width:72%;height:100%;z-index:4;touch-action:none}
-#joy{position:fixed;left:18px;bottom:18px;width:138px;height:138px;border:2px solid rgba(255,255,255,.7);border-radius:50%;background:rgba(0,0,0,.18);z-index:10;touch-action:none;box-shadow:0 4px 20px #0005}
-#knob{position:absolute;left:43px;top:43px;width:48px;height:48px;border-radius:50%;background:#fff;box-shadow:0 3px 12px #0007;pointer-events:none}
-#tip{position:fixed;left:50%;top:12px;transform:translateX(-50%);z-index:8;color:white;background:#0007;padding:7px 12px;border-radius:16px;font-size:12px;pointer-events:none;opacity:.8}
-</style>
-</head>
-<body>
-<canvas id="game"></canvas>
-<div id="look"></div>
-<div id="joy"><div id="knob"></div></div>
-<div id="tip">🕹️ andar • arraste a tela para olhar</div>
+#joy{position:fixed;left:18px;bottom:18px;width:138px;height:138px;border:2px solid #fffc;border-radius:50%;background:#0003;z-index:10;touch-action:none}
+#knob{position:absolute;left:43px;top:43px;width:48px;height:48px;border-radius:50%;background:#fff;box-shadow:0 3px 12px #0008}
+</style></head><body>
+<canvas id="game"></canvas><div id="look"></div><div id="joy"><div id="knob"></div></div>
 <script>
-const canvas=document.getElementById('game');
-const ctx=canvas.getContext('2d',{alpha:false});
-const joy=document.getElementById('joy');
-const knob=document.getElementById('knob');
-const look=document.getElementById('look');
+const C=document.getElementById('game'),X=C.getContext('2d');
+let W=innerWidth,H=innerHeight,D=devicePixelRatio||1;
+function size(){W=innerWidth;H=innerHeight;D=Math.min(devicePixelRatio||1,2);C.width=W*D;C.height=H*D;X.setTransform(D,0,0,D,0,0)}addEventListener('resize',size);size();
 
-let W=innerWidth,H=innerHeight,DPR=1;
-function resize(){
-  DPR=Math.min(devicePixelRatio||1,2);
-  W=innerWidth;H=innerHeight;
-  canvas.width=Math.floor(W*DPR);canvas.height=Math.floor(H*DPR);
-  ctx.setTransform(DPR,0,0,DPR,0,0);
-}
-addEventListener('resize',resize);resize();
+const P={x:0,z:-7,y:1.7,angle:0,look:0},F=Math.min(W,H)*.92;
+let jx=0,jy=0,drag=false,lx=0,ly=0,last=performance.now();
 
-const cam={x:0,y:1.65,z:-5,yaw:0,pitch:0};
-let joyX=0,joyY=0,lookOn=false,lastX=0,lastY=0,lastT=performance.now();
-
-const houses=[
- {x:-8.5,z:7,w:5.2,d:6,h:3.1,c:'#d9b08b',r:'#8b5844'},
- {x:-8.6,z:20,w:5.3,d:6.5,h:3.2,c:'#d08b7d',r:'#71453c'},
- {x:-8.5,z:33,w:5.1,d:6.2,h:3.4,c:'#d7d0c5',r:'#66534a'},
- {x:8.5,z:8,w:5.2,d:6,h:3.1,c:'#d7ccb4',r:'#765044'},
- {x:8.6,z:21,w:5.3,d:6.5,h:3.2,c:'#cfa07b',r:'#69473b'},
- {x:8.5,z:34,w:5.1,d:6.2,h:3.4,c:'#ddd6cb',r:'#785247'},
- {x:-8.5,z:46,w:5.2,d:6.2,h:3.1,c:'#c9b39e',r:'#6d5147'},
- {x:8.5,z:47,w:5.2,d:6.2,h:3.1,c:'#d2b18d',r:'#705046'}
+const HOUSES=[
+[-8.4,7,5,6,3.1,'#d6ad87','#875440'],[-8.4,19,5.2,6.4,3.2,'#cc877a','#70463d'],
+[-8.4,32,5,6,3.3,'#d8d2c8','#70564b'],[-8.4,45,5.2,6.2,3.1,'#c8b09b','#725247'],
+[8.4,8,5,6,3.1,'#d7cbb1','#765043'],[8.4,21,5.2,6.4,3.2,'#cda17e','#6d493d'],
+[8.4,34,5,6,3.3,'#ddd7ce','#785247'],[8.4,47,5.2,6.2,3.1,'#d1b18e','#705045']
 ];
+const TREES=[[-4.3,5,1],[-4.3,16,.9],[-4.3,28,1],[-4.3,41,.9],[-4.3,54,1],[4.3,12,.9],[4.3,26,1],[4.3,40,.9],[4.3,54,1]];
+const POLES=[[-3.35,3],[-3.35,18],[-3.35,34],[-3.35,50],[3.35,10],[3.35,26],[3.35,43]];
 
-const trees=[
- [-4.2,6,1], [4.2,12,.9], [-4.1,18,.9], [4.1,28,1],
- [-4.1,39,.85], [4.1,43,.9], [-4.2,52,1], [4.2,57,.85]
-];
-const poles=[[-3.4,4],[3.4,16],[-3.4,30],[3.4,44],[0,58]];
-
-function camPoint(x,y,z){
-  const dx=x-cam.x,dz=z-cam.z;
-  const cy=Math.cos(cam.yaw),sy=Math.sin(cam.yaw);
-  const rx=dx*cy-dz*sy;
-  const rz=dx*sy+dz*cy;
-  const cp=Math.cos(cam.pitch),sp=Math.sin(cam.pitch);
-  const ry=(y-cam.y)*cp-rz*sp;
-  const rz2=(y-cam.y)*sp+rz*cp;
-  if(rz2<=0.08)return null;
-  const focal=Math.min(W,H)*0.92;
-  return {x:W*.5+rx*focal/rz2,y:H*.52-ry*focal/rz2,z:rz2,s:focal/rz2};
+function proj(x,y,z){
+ let dx=x-P.x,dz=z-P.z;
+ let co=Math.cos(P.angle),si=Math.sin(P.angle);
+ let sx=dx*co-dz*si, sz=dx*si+dz*co;
+ let cp=Math.cos(P.look),sp=Math.sin(P.look);
+ let sy=(y-P.y)*cp-sz*sp, zz=(y-P.y)*sp+sz*cp;
+ if(zz<.12)return null;
+ return {x:W/2+sx*F/zz,y:H*.52-sy*F/zz,s:F/zz,z:zz};
 }
-function face(points,color){
-  if(points.some(p=>!p))return;
-  ctx.fillStyle=color;
-  ctx.beginPath();
-  ctx.moveTo(points[0].x,points[0].y);
-  for(let i=1;i<points.length;i++)ctx.lineTo(points[i].x,points[i].y);
-  ctx.closePath();ctx.fill();
+function face(a,col){
+ if(a.some(q=>!q))return;
+ X.fillStyle=col;X.beginPath();X.moveTo(a[0].x,a[0].y);for(let i=1;i<a.length;i++)X.lineTo(a[i].x,a[i].y);X.closePath();X.fill();
 }
-function line(a,b,color,width){
-  if(!a||!b)return;
-  ctx.strokeStyle=color;ctx.lineWidth=width;
-  ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
-}
+function col(c,n){let v=parseInt(c.slice(1),16),r=Math.max(0,Math.min(255,(v>>16)+n)),g=Math.max(0,Math.min(255,((v>>8)&255)+n)),b=Math.max(0,Math.min(255,(v&255)+n));return '#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('')}
 
 function house(h){
-  const x=h.x,z=h.z,w=h.w,d=h.d,y=h.h;
-  const v=[
-    camPoint(x-w/2,0,z-d/2),camPoint(x+w/2,0,z-d/2),
-    camPoint(x+w/2,y,z-d/2),camPoint(x-w/2,y,z-d/2),
-    camPoint(x-w/2,0,z+d/2),camPoint(x+w/2,0,z+d/2),
-    camPoint(x+w/2,y,z+d/2),camPoint(x-w/2,y,z+d/2)
-  ];
-  if(v.some(p=>!p))return;
-  face([v[0],v[1],v[2],v[3]],h.c);
-  face([v[1],v[5],v[6],v[2]],shade(h.c,-14));
-  face([v[4],v[0],v[3],v[7]],shade(h.c,-24));
-  face([v[5],v[4],v[7],v[6]],shade(h.c,-30));
-
-  const e1=camPoint(x-w/2,y,z-d/2),e2=camPoint(x+w/2,y,z-d/2);
-  const roof=camPoint(x,y+1.05,z-d/2);
-  face([e1,e2,roof],h.r);
-
-  // porta e janelas na frente
-  const door=camPoint(x,y*.48,z-d/2-.025);
-  if(door){
-    ctx.fillStyle='#4c342b';
-    ctx.fillRect(door.x-door.s*.035,door.y-door.s*.11,door.s*.07,door.s*.22);
-  }
-  const wy=y*.58;
-  for(const wx of [x-w*.27,x+w*.27]){
-    const q=camPoint(wx,wy,z-d/2-.03);
-    if(q){
-      ctx.fillStyle='#9fc4cf';
-      ctx.fillRect(q.x-q.s*.045,q.y-q.s*.04,q.s*.09,q.s*.08);
-      ctx.strokeStyle='#4b514f';ctx.lineWidth=Math.max(1,q.s*.008);
-      ctx.strokeRect(q.x-q.s*.045,q.y-q.s*.04,q.s*.09,q.s*.08);
-    }
-  }
+ let [cx,cz,w,d,hgt,base,roof]=h;
+ let v=[
+  proj(cx-w/2,0,cz-d/2),proj(cx+w/2,0,cz-d/2),proj(cx+w/2,hgt,cz-d/2),proj(cx-w/2,hgt,cz-d/2),
+  proj(cx-w/2,0,cz+d/2),proj(cx+w/2,0,cz+d/2),proj(cx+w/2,hgt,cz+d/2),proj(cx-w/2,hgt,cz+d/2)
+ ];
+ if(v.some(q=>!q))return;
+ face([v[4],v[5],v[6],v[7]],col(base,-25));
+ face([v[1],v[5],v[6],v[2]],col(base,-12));
+ face([v[0],v[1],v[2],v[3]],base);
+ face([v[4],v[0],v[3],v[7]],col(base,-18));
+ const roofPeak=proj(cx,hgt+1.05,cz-d/2);
+ face([v[3],v[2],roofPeak],roof);
+ const door=proj(cx,hgt*.48,cz-d/2-.02);
+ if(door){X.fillStyle='#49342d';X.fillRect(door.x-door.s*.035,door.y-door.s*.11,door.s*.07,door.s*.22)}
+ for(const wx of [cx-w*.28,cx+w*.28]){
+  const q=proj(wx,hgt*.62,cz-d/2-.03);
+  if(q){X.fillStyle='#a8c9d1';X.fillRect(q.x-q.s*.05,q.y-q.s*.045,q.s*.1,q.s*.09);X.strokeStyle='#555';X.lineWidth=1;X.strokeRect(q.x-q.s*.05,q.y-q.s*.045,q.s*.1,q.s*.09)}
+ }
 }
-
-function shade(hex,amount){
-  let n=parseInt(hex.slice(1),16);
-  let r=Math.max(0,Math.min(255,(n>>16)+amount));
-  let g=Math.max(0,Math.min(255,((n>>8)&255)+amount));
-  let b=Math.max(0,Math.min(255,(n&255)+amount));
-  return '#'+((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1);
-}
-
 function tree(t){
-  const [x,z,s]=t;
-  const base=camPoint(x,0,z),top=camPoint(x,3.2*s,z);
-  if(!base||!top)return;
-  line(base,top,'#5b412d',Math.max(2,base.s*.035));
-  for(const q of [[x,z,3.1*s],[x-.65*s,z,2.65*s],[x+.65*s,z,2.65*s]]){
-    const p=camPoint(q[0],q[2],q[1]);
-    if(!p)continue;
-    ctx.fillStyle='#3f7747';
-    ctx.beginPath();ctx.arc(p.x,p.y,Math.max(7,p.s*.22),0,Math.PI*2);ctx.fill();
-  }
+ let [cx,cz,s]=t,b=proj(cx,0,cz),tr=proj(cx,3.1*s,cz);if(!b||!tr)return;
+ X.strokeStyle='#60452e';X.lineWidth=Math.max(2,b.s*.035);X.beginPath();X.moveTo(b.x,b.y);X.lineTo(tr.x,tr.y);X.stroke();
+ for(const [x,y,z] of [[cx,2.6*s,cz],[cx-.55*s,2.3*s,cz],[cx+.55*s,2.3*s,cz]]){
+  let q=proj(x,y,z);if(!q)continue;X.fillStyle='#3d7445';X.beginPath();X.arc(q.x,q.y,Math.max(7,q.s*.24),0,Math.PI*2);X.fill();
+ }
+}
+function pole(t){let a=proj(t[0],0,t[1]),b=proj(t[0],5.2,t[1]);if(!a||!b)return;X.strokeStyle='#555';X.lineWidth=Math.max(2,a.s*.025);X.beginPath();X.moveTo(a.x,a.y);X.lineTo(b.x,b.y);X.stroke()}
+
+function road(){
+ // O chão é desenhado em coordenadas mundiais FIXAS. Nada é anexado à câmera.
+ X.fillStyle='#94c8df';X.fillRect(0,0,W,H);
+ X.fillStyle='#71965f';X.fillRect(0,H*.52,W,H*.48);
+ const far=160;
+ face([proj(-18,0,-20),proj(-3.55,0,-20),proj(-3.55,0,far),proj(-18,0,far)],'#73975f');
+ face([proj(3.55,0,-20),proj(18,0,-20),proj(18,0,far),proj(3.55,0,far)],'#73975f');
+ face([proj(-5.15,.01,-20),proj(-3.55,.01,-20),proj(-3.55,.01,far),proj(-5.15,.01,far)],'#b9b4aa');
+ face([proj(3.55,.01,-20),proj(5.15,.01,-20),proj(5.15,.01,far),proj(3.55,.01,far)],'#b9b4aa');
+ face([proj(-3.55,.02,-20),proj(3.55,.02,-20),proj(3.55,.02,far),proj(-3.55,.02,far)],'#505050');
+ for(let z=-20;z<far;z+=8)face([proj(-.07,.04,z),proj(.07,.04,z),proj(.07,.04,z+3),proj(-.07,.04,z+3)],'#dfd27b');
 }
 
-function pole(p){
-  const [x,z]=p;
-  const a=camPoint(x,0,z),b=camPoint(x,5.4,z);
-  if(!a||!b)return;
-  line(a,b,'#555',Math.max(2,a.s*.025));
-  const arm=camPoint(x+.9,5.15,z);
-  line(b,arm,'#555',Math.max(1,a.s*.018));
+function render(){
+ road();
+ const items=[];
+ HOUSES.forEach(h=>items.push([Math.hypot(h[0]-P.x,h[1]-P.z),()=>house(h)]));
+ TREES.forEach(t=>items.push([Math.hypot(t[0]-P.x,t[1]-P.z),()=>tree(t)]));
+ POLES.forEach(t=>items.push([Math.hypot(t[0]-P.x,t[1]-P.z),()=>pole(t)]));
+ items.sort((a,b)=>b[0]-a[0]);for(const i of items)i[1]();
+ requestAnimationFrame(render);
 }
+render();
 
-function ground(){
-  // céu
-  ctx.fillStyle='#9ccbe3';ctx.fillRect(0,0,W,H);
-  const horizon=H*.52;
-  ctx.fillStyle='#789b63';ctx.fillRect(0,horizon,W,H-horizon);
-
-  // quadra/terreno dos lados
-  const left=[camPoint(-18,0,-20),camPoint(-3.6,0,-20),camPoint(-3.6,0,180),camPoint(-18,0,180)];
-  const right=[camPoint(3.6,0,-20),camPoint(18,0,-20),camPoint(18,0,180),camPoint(3.6,0,180)];
-  face(left,'#72945d');face(right,'#72945d');
-
-  // rua
-  const road=[camPoint(-3.6,.01,-20),camPoint(3.6,.01,-20),camPoint(3.6,.01,180),camPoint(-3.6,.01,180)];
-  face(road,'#4c4c4c');
-
-  // calçadas
-  const lside=[camPoint(-5.2,.04,-20),camPoint(-3.6,.04,-20),camPoint(-3.6,.04,180),camPoint(-5.2,.04,180)];
-  const rside=[camPoint(3.6,.04,-20),camPoint(5.2,.04,-20),camPoint(5.2,.04,180),camPoint(3.6,.04,180)];
-  face(lside,'#b7b1a7');face(rside,'#b7b1a7');
-
-  // linha central
-  for(let z=Math.floor(cam.z/8)*8;z<180;z+=8){
-    const a=camPoint(-.07,.06,z),b=camPoint(.07,.06,z);
-    face([a,camPoint(.07,.06,z+3),camPoint(-.07,.06,z+3),b],'#dfd27d');
-  }
+function joy(e){
+ let r=document.getElementById('joy').getBoundingClientRect(),x=e.clientX-r.left-r.width/2,y=e.clientY-r.top-r.height/2,m=43,n=Math.hypot(x,y);
+ if(n>m){x=x/n*m;y=y/n*m}jx=x/m;jy=y/m;document.getElementById('knob').style.transform='translate('+x+'px,'+y+'px)';
 }
+joyEl=document.getElementById('joy');
+joyEl.onpointerdown=e=>{e.preventDefault();joyEl.setPointerCapture(e.pointerId);joy(e)};
+joyEl.onpointermove=e=>{if(joyEl.hasPointerCapture(e.pointerId))joy(e)};
+function stopJoy(){jx=jy=0;document.getElementById('knob').style.transform='translate(0,0)'}
+joyEl.onpointerup=stopJoy;joyEl.onpointercancel=stopJoy;
 
-function draw(){
-  ground();
-  const objects=[];
-  houses.forEach(h=>objects.push({d:dist(h.x,h.z),f:()=>house(h)}));
-  trees.forEach(t=>objects.push({d:dist(t[0],t[1]),f:()=>tree(t)}));
-  poles.forEach(p=>objects.push({d:dist(p[0],p[1]),f:()=>pole(p)}));
-  objects.sort((a,b)=>b.d-a.d);
-  for(const o of objects)o.f();
-  requestAnimationFrame(draw);
-}
-function dist(x,z){return Math.hypot(x-cam.x,z-cam.z)}
-draw();
-
-function setJoy(e){
-  const r=joy.getBoundingClientRect();
-  let x=e.clientX-r.left-r.width/2;
-  let y=e.clientY-r.top-r.height/2;
-  const max=43,n=Math.hypot(x,y);
-  if(n>max){x=x/n*max;y=y/n*max}
-  joyX=x/max;joyY=y/max;
-  knob.style.transform='translate('+x+'px,'+y+'px)';
-}
-joy.addEventListener('pointerdown',e=>{
-  e.preventDefault();joy.setPointerCapture(e.pointerId);setJoy(e);
-});
-joy.addEventListener('pointermove',e=>{if(joy.hasPointerCapture(e.pointerId))setJoy(e)});
-function releaseJoy(){
-  joyX=0;joyY=0;knob.style.transform='translate(0,0)';
-}
-joy.addEventListener('pointerup',releaseJoy);
-joy.addEventListener('pointercancel',releaseJoy);
-
-look.addEventListener('pointerdown',e=>{
-  e.preventDefault();lookOn=true;lastX=e.clientX;lastY=e.clientY;look.setPointerCapture(e.pointerId);
-});
-look.addEventListener('pointermove',e=>{
-  if(!lookOn)return;
-  const dx=e.clientX-lastX,dy=e.clientY-lastY;
-  cam.yaw-=dx*.006;
-  cam.pitch=Math.max(-.32,Math.min(.32,cam.pitch-dy*.004));
-  lastX=e.clientX;lastY=e.clientY;
-});
-function endLook(){lookOn=false}
-look.addEventListener('pointerup',endLook);
-look.addEventListener('pointercancel',endLook);
+look.onpointerdown=e=>{e.preventDefault();drag=true;lx=e.clientX;ly=e.clientY;look.setPointerCapture(e.pointerId)};
+look.onpointermove=e=>{if(!drag)return;P.angle-=(e.clientX-lx)*.005;P.look=Math.max(-.28,Math.min(.28,P.look-(e.clientY-ly)*.003));lx=e.clientX;ly=e.clientY};
+look.onpointerup=look.onpointercancel=()=>drag=false;
 
 function update(t){
-  const dt=Math.min(.035,(t-lastT)/1000);lastT=t;
-  const speed=4.4;
-  const forward=-joyY*speed*dt;
-  const strafe=joyX*speed*dt;
-  cam.x += Math.sin(cam.yaw)*forward + Math.cos(cam.yaw)*strafe;
-  cam.z += Math.cos(cam.yaw)*forward - Math.sin(cam.yaw)*strafe;
-  cam.x=Math.max(-3,Math.min(3,cam.x));
-  cam.z=Math.max(-12,Math.min(105,cam.z));
-  requestAnimationFrame(update);
+ let dt=Math.min(.04,(t-last)/1000);last=t;
+ let speed=4.2,forward=-jy*speed*dt,side=jx*speed*dt;
+ // movimento no mundo, usando apenas a direção da câmera. O cenário nunca gira.
+ P.x+=Math.sin(P.angle)*forward+Math.cos(P.angle)*side;
+ P.z+=Math.cos(P.angle)*forward-Math.sin(P.angle)*side;
+ P.x=Math.max(-3,Math.min(3,P.x));P.z=Math.max(-12,Math.min(100,P.z));
+ requestAnimationFrame(update);
 }
 requestAnimationFrame(update);
-
-// mouse no computador
-let keys={};
-addEventListener('keydown',e=>keys[e.key.toLowerCase()]=true);
-addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
-function keyboard(t){
-  const dt=Math.min(.035,(t-lastT)/1000);
-  if(keys.w||keys.arrowup){cam.x+=Math.sin(cam.yaw)*4*dt;cam.z+=Math.cos(cam.yaw)*4*dt}
-  if(keys.s||keys.arrowdown){cam.x-=Math.sin(cam.yaw)*4*dt;cam.z-=Math.cos(cam.yaw)*4*dt}
-  if(keys.a||keys.arrowleft){cam.x-=Math.cos(cam.yaw)*4*dt;cam.z+=Math.sin(cam.yaw)*4*dt}
-  if(keys.d||keys.arrowright){cam.x+=Math.cos(cam.yaw)*4*dt;cam.z-=Math.sin(cam.yaw)*4*dt}
-  cam.x=Math.max(-3,Math.min(3,cam.x));cam.z=Math.max(-12,Math.min(105,cam.z));
-  requestAnimationFrame(keyboard);
-}
-requestAnimationFrame(keyboard);
-</script>
-</body>
-</html>
+</script></body></html>
