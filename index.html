@@ -129,6 +129,14 @@ function house(h){
  });
  for(const f of faces)poly(f.ids.map(id=>p[id]),f.fill);
 
+ // Parede lateral voltada para a rua: as casas ficam fora da calçada,
+ // então esta lateral precisa existir como uma face sólida independente.
+ // Ela é desenhada antes do teto e dos detalhes para não apagar porta/janelas.
+ const streetX = h.x < 0 ? x2 : x1;
+ const streetSide = h.x < 0 ? shade(h.side,-6) : h.side;
+ const sw1=hp(streetX,z1,0),sw2=hp(streetX,z2,0),sw3=hp(streetX,z2,Hh),sw4=hp(streetX,z1,Hh);
+ poly([sw1,sw2,sw3,sw4],streetSide);
+
  // PROJEÇÃO PRÓPRIA DO TETO
  // O telhado não usa mais a projeção das paredes. Cada vértice é
  // projetado separadamente e as águas são ordenadas pela profundidade.
