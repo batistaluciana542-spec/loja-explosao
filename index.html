@@ -1,65 +1,60 @@
 <!doctype html>
-<html lang="pt-BR">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Rua Explorer</title>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>Rua Explorer</title>
 <style>
-*{box-sizing:border-box}
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#8bc8ed;font-family:Arial,sans-serif;touch-action:none}
-#game{position:fixed;inset:0;overflow:hidden;background:linear-gradient(#8bc8ed 0 48%,#7f9b67 48% 100%)}
-#road{position:absolute;left:50%;top:48%;width:31%;height:60%;transform:translateX(-50%);background:#555;clip-path:polygon(42% 0,58% 0,100% 100%,0 100%)}
-.side{position:absolute;top:48%;height:60%;width:36%;background:#c4beb4}
-#sideL{right:calc(50% + 15.5%);clip-path:polygon(100% 0,100% 0,100% 100%,0 100%)}
-#sideR{left:calc(50% + 15.5%);clip-path:polygon(0 0,0 0,100% 100%,0 100%)}
-.house{position:absolute;bottom:38%;width:150px;height:105px;border:3px solid #55463e;box-shadow:0 7px 0 #0002}
-.house:before{content:"";position:absolute;left:-12px;top:-30px;width:168px;height:35px;background:#754b3d;clip-path:polygon(8% 100%,50% 0,92% 100%)}
-.window{position:absolute;width:30px;height:28px;background:#b8d9e5;border:4px solid #eee;top:32px}
-.door{position:absolute;width:34px;height:55px;background:#403a35;bottom:0;left:58px}
-#h1{left:9%;background:#d6bc99;transform:scale(.72)}
-#h2{left:23%;background:#c97b6b;transform:scale(.52)}
-#h3{right:9%;background:#e7dfd3;transform:scale(.72)}
-#h4{right:23%;background:#668da1;transform:scale(.52)}
-.tree{position:absolute;bottom:39%;width:16px;height:80px;background:#684a35}
-.tree:before{content:"";position:absolute;width:70px;height:70px;left:-27px;top:-45px;border-radius:50%;background:#4f7e46}
-#t1{left:25%;transform:scale(.7)}#t2{right:25%;transform:scale(.7)}
-.pole{position:absolute;bottom:39%;width:8px;height:105px;background:#777}
-.pole:after{content:"";position:absolute;left:-18px;top:0;width:44px;height:5px;background:#333}
-#p1{left:34%}#p2{right:34%}
-#hud{position:absolute;top:12px;left:12px;padding:9px 12px;border-radius:10px;background:#0009;color:#fff;font-size:13px;font-weight:bold;z-index:20}
-#look{position:absolute;right:0;top:0;width:62%;height:100%;z-index:15}
-#joy{position:absolute;left:18px;bottom:20px;width:124px;height:124px;border:2px solid #fff8;border-radius:50%;background:#fff3;z-index:20}
-#stick{position:absolute;left:35px;top:35px;width:50px;height:50px;border-radius:50%;background:#fff;box-shadow:0 2px 8px #0005}
-#tip{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);z-index:20;background:#0008;color:#fff;padding:6px 9px;border-radius:8px;font-size:11px;white-space:nowrap}
-</style>
-</head>
-<body>
-<div id="game">
-<div id="road"></div><div class="side" id="sideL"></div><div class="side" id="sideR"></div>
-<div class="house" id="h1"><span class="window" style="left:18px"></span><span class="window" style="right:18px"></span><span class="door"></span></div>
-<div class="house" id="h2"><span class="window" style="left:18px"></span><span class="door"></span></div>
-<div class="house" id="h3"><span class="window" style="left:18px"></span><span class="window" style="right:18px"></span><span class="door"></span></div>
-<div class="house" id="h4"><span class="window" style="left:18px"></span><span class="door"></span></div>
-<div class="tree" id="t1"></div><div class="tree" id="t2"></div>
-<div class="pole" id="p1"></div><div class="pole" id="p2"></div>
-<div id="hud">RUA EXPLORER • 0.1</div><div id="look"></div>
-<div id="joy"><div id="stick"></div></div><div id="tip">Arraste à direita para olhar • joystick para andar</div>
-</div>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#8cc9ed;font-family:Arial;touch-action:none}
+#c{position:fixed;inset:0;width:100%;height:100%}#hud{position:fixed;z-index:5;top:12px;left:12px;background:#0009;color:#fff;padding:8px 11px;border-radius:9px;font-weight:bold;font-size:13px}
+#look{position:fixed;z-index:4;right:0;top:0;width:65%;height:100%}#joy{position:fixed;z-index:6;left:18px;bottom:20px;width:124px;height:124px;border:2px solid #fff8;border-radius:50%;background:#ffffff30}#stick{position:absolute;left:35px;top:35px;width:50px;height:50px;border-radius:50%;background:white}
+</style></head><body>
+<canvas id="c"></canvas><div id="hud">RUA EXPLORER</div><div id="look"></div><div id="joy"><div id="stick"></div></div>
 <script>
 (function(){
-var look=document.getElementById('look'),joy=document.getElementById('joy'),stick=document.getElementById('stick'),game=document.getElementById('game');
-var lookId=null,joyId=null,lastX=0,turn=0,moveX=0,moveY=0,offsetX=0;
-function render(){game.style.transform='translate3d('+offsetX+'px,0,0) rotateY('+turn+'deg)';}
-look.addEventListener('pointerdown',function(e){lookId=e.pointerId;lastX=e.clientX;look.setPointerCapture(e.pointerId)});
-look.addEventListener('pointermove',function(e){if(e.pointerId===lookId){turn+=(e.clientX-lastX)*.025;turn=Math.max(-7,Math.min(7,turn));lastX=e.clientX;render()}});
-look.addEventListener('pointerup',function(){lookId=null});look.addEventListener('pointercancel',function(){lookId=null});
-function joystick(e){var r=joy.getBoundingClientRect(),dx=e.clientX-r.left-r.width/2,dy=e.clientY-r.top-r.height/2,m=34,n=Math.hypot(dx,dy);if(n>m){dx=dx/n*m;dy=dy/n*m}moveX=dx/m;moveY=dy/m;stick.style.transform='translate('+dx+'px,'+dy+'px)'}
-joy.addEventListener('pointerdown',function(e){joyId=e.pointerId;joy.setPointerCapture(e.pointerId);joystick(e)});
-joy.addEventListener('pointermove',function(e){if(e.pointerId===joyId)joystick(e)});
-function end(e){if(e.pointerId===joyId){joyId=null;moveX=moveY=0;stick.style.transform='translate(0,0)'}}
-joy.addEventListener('pointerup',end);joy.addEventListener('pointercancel',end);
-function loop(){offsetX+=moveX*1.8;offsetX=Math.max(-55,Math.min(55,offsetX));render();requestAnimationFrame(loop)}loop();
+const c=document.getElementById('c'),ctx=c.getContext('2d'),look=document.getElementById('look'),joy=document.getElementById('joy'),stick=document.getElementById('stick');
+let W=innerWidth,H=innerHeight,dpr=1;
+function resize(){W=innerWidth;H=innerHeight;dpr=Math.min(devicePixelRatio||1,2);c.width=W*dpr;c.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0)}addEventListener('resize',resize);resize();
+
+let camZ=0,camX=0,yaw=0,jx=0,jy=0,lookId=null,joyId=null,lastX=0;
+const houses=[
+{x:-7,z:8,w:5,h:3,c:'#d6bd99',roof:'#754b3d'}, {x:7,z:8,w:5,h:3,c:'#e9e2d8',roof:'#955346'},
+{x:-7,z:22,w:5.5,h:3.2,c:'#c77d6d',roof:'#69483d'}, {x:7,z:22,w:5,h:3,c:'#668da1',roof:'#555'},
+{x:-7,z:38,w:6,h:3.3,c:'#d0b58e',roof:'#76513f'}, {x:7,z:38,w:5.5,h:3,c:'#ddd4c7',roof:'#8b574b'},
+{x:-7,z:57,w:5.5,h:3,c:'#b96f61',roof:'#68483c'}, {x:7,z:57,w:6,h:3.3,c:'#d8d1c6',roof:'#715047'}
+];
+const trees=[{x:-5.3,z:14},{x:5.3,z:29},{x:-5.3,z:47},{x:5.3,z:64}];
+const poles=[{x:-5.6,z:7},{x:5.6,z:27},{x:-5.6,z:49},{x:5.6,z:68}];
+
+function project(wx,wz){
+ let dx=wx-camX,dz=wz-camZ;
+ let cs=Math.cos(yaw),sn=Math.sin(yaw);
+ let sx=dx*cs-dz*sn, depth=dx*sn+dz*cs;
+ if(depth<=1)return null;
+ let scale=520/depth;
+ return {x:W/2+sx*scale,y:H*.51,w:scale,depth};
+}
+function house(h,p){
+ let w=h.w*p.w,hgt=h.h*p.w,base=H*.52+(H*.48)*Math.min(1,18/(p.depth+18)),top=base-hgt;
+ ctx.fillStyle=h.c;ctx.fillRect(p.x-w/2,top,w,hgt);
+ ctx.fillStyle=h.roof;ctx.beginPath();ctx.moveTo(p.x-w*.58,top);ctx.lineTo(p.x,top-hgt*.42);ctx.lineTo(p.x+w*.58,top);ctx.closePath();ctx.fill();
+ ctx.fillStyle='#3c3631';ctx.fillRect(p.x-w*.10,base-hgt*.48,w*.20,hgt*.48);
+ ctx.fillStyle='#b9dce8';ctx.strokeStyle='#fff';ctx.lineWidth=Math.max(1,p.w*.035);
+ ctx.fillRect(p.x-w*.36,top+hgt*.30,w*.19,hgt*.20);ctx.strokeRect(p.x-w*.36,top+hgt*.30,w*.19,hgt*.20);
+ ctx.fillRect(p.x+w*.17,top+hgt*.30,w*.19,hgt*.20);ctx.strokeRect(p.x+w*.17,top+hgt*.30,w*.19,hgt*.20);
+}
+function drawTree(t,p){let s=Math.max(4,30*p.w);let base=H*.52+(H*.48)*Math.min(1,18/(p.depth+18));ctx.fillStyle='#684a35';ctx.fillRect(p.x-s*.08,base-s*2,s*.16,s*2);ctx.fillStyle='#4d7d46';ctx.beginPath();ctx.arc(p.x,base-s*2.1,s,0,Math.PI*2);ctx.fill()}
+function drawPole(t,p){let h=Math.min(H*.48,70*p.w),base=H*.52+(H*.48)*Math.min(1,18/(p.depth+18));ctx.fillStyle='#777';ctx.fillRect(p.x-2,base-h,4,h);ctx.fillStyle='#333';ctx.fillRect(p.x-16,base-h,32,3)}
+function draw(){
+ ctx.clearRect(0,0,W,H);ctx.fillStyle='#8cc9ed';ctx.fillRect(0,0,W,H*.52);ctx.fillStyle='#789662';ctx.fillRect(0,H*.52,W,H*.48);
+ const hy=H*.52;
+ ctx.fillStyle='#555';ctx.beginPath();ctx.moveTo(W*.38,hy);ctx.lineTo(W*.62,hy);ctx.lineTo(W*.96,H);ctx.lineTo(W*.04,H);ctx.closePath();ctx.fill();
+ ctx.fillStyle='#c3beb4';ctx.beginPath();ctx.moveTo(0,hy);ctx.lineTo(W*.38,hy);ctx.lineTo(W*.04,H);ctx.lineTo(0,H);ctx.closePath();ctx.fill();ctx.beginPath();ctx.moveTo(W*.62,hy);ctx.lineTo(W,hy);ctx.lineTo(W,H);ctx.lineTo(W*.96,H);ctx.closePath();ctx.fill();
+ let list=[];houses.forEach(o=>{let p=project(o.x,o.z);if(p)list.push([p.depth,0,o,p])});trees.forEach(o=>{let p=project(o.x,o.z);if(p)list.push([p.depth,1,o,p])});poles.forEach(o=>{let p=project(o.x,o.z);if(p)list.push([p.depth,2,o,p])});
+ list.sort((a,b)=>b[0]-a[0]);list.forEach(a=>a[1]===0?house(a[2],a[3]):a[1]===1?drawTree(a[2],a[3]):drawPole(a[2],a[3]));
+}
+function move(){let speed=.22;jx*=.88;jy*=.88;camX+=jx*speed;camZ+=(-jy)*speed;camX=Math.max(-4.3,Math.min(4.3,camX));camZ=Math.max(0,Math.min(66,camZ));draw();requestAnimationFrame(move)}requestAnimationFrame(move);
+look.addEventListener('pointerdown',e=>{lookId=e.pointerId;lastX=e.clientX;look.setPointerCapture(e.pointerId)});
+look.addEventListener('pointermove',e=>{if(e.pointerId===lookId){yaw+=(e.clientX-lastX)*.006;lastX=e.clientX;draw()}});
+look.addEventListener('pointerup',()=>lookId=null);look.addEventListener('pointercancel',()=>lookId=null);
+function joystick(e){let r=joy.getBoundingClientRect(),dx=e.clientX-r.left-r.width/2,dy=e.clientY-r.top-r.height/2,m=34,n=Math.hypot(dx,dy);if(n>m){dx=dx/n*m;dy=dy/n*m}jx=dx/m;jy=dy/m;stick.style.transform='translate('+dx+'px,'+dy+'px)'}
+joy.addEventListener('pointerdown',e=>{joyId=e.pointerId;joy.setPointerCapture(e.pointerId);joystick(e)});joy.addEventListener('pointermove',e=>{if(e.pointerId===joyId)joystick(e)});
+function end(e){if(e.pointerId===joyId){joyId=null;jx=jy=0;stick.style.transform='translate(0,0)'}}joy.addEventListener('pointerup',end);joy.addEventListener('pointercancel',end);
 })();
-</script>
-</body>
-</html>
+</script></body></html>
