@@ -1,149 +1,50 @@
 <!doctype html>
-<html lang="pt-BR">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta http-equiv="Cache-Control" content="no-cache,no-store,must-revalidate">
-<title>Rua 3D • Mobile</title>
+<html lang="pt-BR"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Rua 3D • Nova</title>
 <style>
-*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#9fc8df;font-family:Arial,sans-serif;touch-action:none}
-#game{position:fixed;inset:0;width:100%;height:100%;display:block}
-#hud{position:fixed;z-index:10;top:10px;left:10px;padding:8px 10px;border-radius:9px;background:#111b;color:#fff;font-size:12px;font-weight:bold}
-#help{position:fixed;z-index:10;top:40px;left:10px;padding:5px 8px;border-radius:7px;background:#111b;color:#fff8;font-size:10px}
-#joy{position:fixed;z-index:20;left:18px;bottom:18px;width:132px;height:132px;border:2px solid #fff8;border-radius:50%;background:#1114;box-shadow:0 3px 15px #0005}
-#stick{position:absolute;left:39px;top:39px;width:50px;height:50px;border-radius:50%;background:#fff;box-shadow:0 3px 12px #0007}
-#look{position:fixed;z-index:15;right:0;top:0;width:70%;height:100%}
-#err{display:none;position:fixed;z-index:100;inset:0;background:#20252b;color:#fff;padding:30px;font:16px monospace;white-space:pre-wrap}
-</style>
-</head>
-<body>
-<canvas id="game"></canvas>
-<div id="hud">RUA 3D • MOBILE</div>
-<div id="help">← joystick: andar • direita: olhar</div>
-<div id="joy"><div id="stick"></div></div>
-<div id="look"></div>
-<div id="err"></div>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#b9d8e7;touch-action:none;font-family:Arial}
+canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
+#hud{position:fixed;z-index:5;left:10px;top:10px;color:#fff;background:#111b;padding:8px 10px;border-radius:8px;font-weight:bold;font-size:12px}
+#joy{position:fixed;z-index:10;left:18px;bottom:18px;width:128px;height:128px;border:2px solid #ffffff99;border-radius:50%;background:#1113}
+#knob{position:absolute;left:38px;top:38px;width:48px;height:48px;border-radius:50%;background:#fff;box-shadow:0 3px 12px #0006}
+#look{position:fixed;right:0;top:0;width:70%;height:100%;z-index:8}
+</style></head><body>
+<canvas id="c"></canvas><div id="hud">RUA 3D • NOVA</div>
+<div id="look"></div><div id="joy"><div id="knob"></div></div>
 <script>
-(function(){
 'use strict';
-const c=document.getElementById('game'),ctx=c.getContext('2d',{alpha:false});
-const joy=document.getElementById('joy'),stick=document.getElementById('stick'),look=document.getElementById('look'),err=document.getElementById('err');
-let W=innerWidth,H=innerHeight,D=1;
-function resize(){D=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;c.width=W*D;c.height=H*D;c.style.width=W+'px';c.style.height=H+'px';ctx.setTransform(D,0,0,D,0,0)}
-addEventListener('resize',resize);resize();
+const c=document.getElementById('c'),g=c.getContext('2d'),joy=document.getElementById('joy'),knob=document.getElementById('knob'),look=document.getElementById('look');
+let W,H,dpr,cam={x:0,y:1.7,z:0,a:0,p:0},jx=0,jy=0,drag=false,lx=0,ly=0;
+function size(){dpr=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;c.width=W*dpr;c.height=H*dpr;g.setTransform(dpr,0,0,dpr,0,0)}addEventListener('resize',size);size();
 
-let cam={x:0,y:1.65,z:-7,yaw:0,pitch:0};
-let joyX=0,joyY=0,lookX=0,lookY=0,last=performance.now();
 const houses=[
-{x:-7,z:8,w:5,d:7,h:3.3,col:'#d7b18b',roof:'#754b3e',door:'#4a3329',win:'#a9d8e2'},
-{x:-7,z:18,w:5.5,d:6,h:3.0,col:'#d08b77',roof:'#66453b',door:'#47342d',win:'#b4dce3'},
-{x:-7,z:27,w:4.7,d:7,h:3.5,col:'#e1ddd4',roof:'#765249',door:'#4a3830',win:'#a8d2dc'},
-{x:7,z:9,w:5,d:6,h:3.2,col:'#dfd3b9',roof:'#765043',door:'#4b362c',win:'#abd6df'},
-{x:7,z:18,w:5.5,d:7,h:3.0,col:'#cda07e',roof:'#69483d',door:'#49352c',win:'#b1d9e0'},
-{x:7,z:28,w:5,d:6,h:3.4,col:'#d9c8ad',roof:'#754d43',door:'#49342c',win:'#acd4dc'}
+[-7,10,5,6,3.2,'#d8b28c','#70483c'],[-7,19,5.5,6,3.1,'#cf8775','#69463c'],[-7,28,5,6,3.5,'#ded9d0','#754e45'],
+[7,9,5,6,3.2,'#ded2b9','#714c40'],[7,18,5.5,6,3,'#cda07e','#69483d'],[7,28,5,6,3.4,'#e0d9ce','#805247']
 ];
-const trees=[
-{x:-4,z:6,s:1.0},{x:4,z:13,s:.9},{x:-4,z:23,s:1.05},{x:4,z:31,s:.85},
-{x:-10,z:15,s:.75},{x:10,z:22,s:.8}
-];
-const poles=[{x:-2.8,z:4},{x:2.8,z:12},{x:-2.8,z:22},{x:2.8,z:31}];
+const trees=[[-4,7,1], [4,12,.9],[-4,21,1],[4,26,.85],[-9,16,.8],[9,23,.8]];
+const poles=[[-3,5], [3,14],[-3,24],[3,32]];
 
-function worldToCam(x,y,z){
- let dx=x-cam.x,dy=y-cam.y,dz=z-cam.z;
- const cy=Math.cos(cam.yaw),sy=Math.sin(cam.yaw);
- const X=dx*cy-dz*sy, Z=dx*sy+dz*cy;
- const cp=Math.cos(cam.pitch),sp=Math.sin(cam.pitch);
- return {x:X,y:dy*cp-Z*sp,z:dy*sp+Z*cp};
+function tr(x,y,z){let X=x-cam.x,Y=y-cam.y,Z=z-cam.z,ca=Math.cos(cam.a),sa=Math.sin(cam.a);let xx=X*ca-Z*sa,zz=X*sa+Z*ca,cp=Math.cos(cam.p),sp=Math.sin(cam.p);return [xx,Y*cp-zz*sp,Y*sp+zz*cp]}
+function P(v){if(v[2]<.12)return null;let f=Math.min(W,H)*.95;return [W/2+v[0]*f/v[2],H/2-v[1]*f/v[2],v[2]]}
+function face(v,col){let p=v.map(x=>P(tr(x[0],x[1],x[2])));if(p.some(x=>!x))return;p.sort((a,b)=>a[2]-b[2]);g.beginPath();let q=p[0];g.moveTo(q[0],q[1]);for(let i=1;i<p.length;i++)g.lineTo(p[i][0],p[i][1]);g.closePath();g.fillStyle=col;g.fill()}
+function cube(x,y,z,w,h,d,col){
+let a=x-w/2,b=x+w/2,s=z-d/2,t=z+d/2;
+let F=[[[a,y,s],[b,y,s],[b,y+h,s],[a,y+h,s]],[[b,y,s],[b,y,t],[b,y+h,t],[b,y+h,s]],[[b,y,t],[a,y,t],[a,y+h,t],[b,y+h,t]],[[a,y,t],[a,y,s],[a,y+h,s],[a,y+h,t]],[[a,y+h,s],[b,y+h,s],[b,y+h,t],[a,y+h,t]]];
+F.sort((u,v)=>tr(u[0][0],u[0][1],u[0][2])[2]-tr(v[0][0],v[0][1],v[0][2])[2]);F.forEach(f=>face(f,col))
 }
-function proj(p){
- if(p.z<.15)return null;
- const f=Math.min(W,H)*.92, sx=W/2+p.x*f/p.z, sy=H/2-p.y*f/p.z;
- return {x:sx,y:sy,z:p.z};
+function house(h){
+let [x,z,w,d,hh,col,roof]=h;cube(x,0,z,w,hh,d,col);
+let f=z-d/2-.03;cube(x,.05,f,.9,1.65,.08,'#4a332b');
+cube(x-w*.27,1.65,f,.85,.7,.06,'#a9d4dc');cube(x+w*.27,1.65,f,.85,.7,.06,'#a9d4dc');
+face([[x-w*.58,hh,z-d*.58],[x,hh+.9,z-d*.58],[x+w*.58,hh,z-d*.58]],roof);
 }
-function poly(points,fill,stroke){
- const ps=points.map(p=>proj(worldToCam(p[0],p[1],p[2])));
- if(ps.some(p=>!p))return;
- ctx.beginPath();ctx.moveTo(ps[0].x,ps[0].y);
- for(let i=1;i<ps.length;i++)ctx.lineTo(ps[i].x,ps[i].y);
- ctx.closePath();ctx.fillStyle=fill;ctx.fill();
- if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=1;ctx.stroke()}
-}
-function box(x,y,z,w,h,d,col){
- const x1=x-w/2,x2=x+w/2,z1=z-d/2,z2=z+d/2;
- const faces=[
- [[x1,y,z1],[x2,y,z1],[x2,y+h,z1],[x1,y+h,z1]],
- [[x2,y,z1],[x2,y,z2],[x2,y+h,z2],[x2,y+h,z1]],
- [[x2,y,z2],[x1,y,z2],[x1,y+h,z2],[x2,y+h,z2]],
- [[x1,y,z2],[x1,y,z1],[x1,y+h,z1],[x1,y+h,z2]],
- [[x1,y+h,z1],[x2,y+h,z1],[x2,y+h,z2],[x1,y+h,z2]]
- ];
- faces.map(f=>({f,d:f.reduce((s,p)=>s+worldToCam(p[0],p[1],p[2]).z,0)/4}))
- .sort((a,b)=>b.d-a.d).forEach(o=>poly(o.f,col));
-}
-function house(q){
- box(q.x,0,q.z,q.w,q.h,q.d,q.col);
- const front=q.z-q.d/2-.015;
- box(q.x,.05,front,.9,1.65,.08,q.door);
- for(const dx of [-q.w*.27,q.w*.27])box(q.x+dx,1.65,front,.9,.75,.07,q.win);
- const r=.72, top=q.h+.1;
- poly([[q.x-q.w*.58,top,q.z-q.d*.58],[q.x,top+r,q.z-q.d*.58],[q.x+q.w*.58,top,q.z-q.d*.58]],q.roof);
-}
-function tree(t){
- const y=0,base=t.z;
- box(t.x,.2,base,.35,2.1,.35,'#6b472f');
- const s=proj(worldToCam(t.x,2.6,base));if(!s)return;
- const r=Math.max(7,Math.min(45,125*t.s/s.z));
- ctx.fillStyle='#3f7b45';ctx.beginPath();ctx.arc(s.x,s.y,r,0,Math.PI*2);ctx.fill();
- ctx.fillStyle='#4d8b4c';ctx.beginPath();ctx.arc(s.x-r*.4,s.y+r*.05,r*.65,0,Math.PI*2);ctx.fill();
-}
-function pole(q){
- box(q.x,0,q.z,.13,5.2,.13,'#5c5c58');
- const a=worldToCam(q.x,5,q.z),b=worldToCam(q.x,5,q.z+7);
- const pa=proj(a),pb=proj(b);if(pa&&pb){ctx.strokeStyle='#30302e';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(pa.x,pa.y);ctx.lineTo(pb.x,pb.y);ctx.stroke()}
-}
-function ground(){
- poly([[-30,0,-25],[30,0,-25],[30,0,75],[-30,0,75]],'#70945b');
- poly([[-3.2,.01,-25],[3.2,.01,-25],[3.2,.01,75],[-3.2,.01,75]],'#505050');
- poly([[-5,.02,-25],[-3.2,.02,-25],[-3.2,.02,75],[-5,.02,75]],'#c9c1b7');
- poly([[3.2,.02,-25],[5,.02,-25],[5,.02,75],[3.2,.02,75]],'#c9c1b7');
- for(let z=-15;z<75;z+=9)poly([[-.12,.03,z],[.12,.03,z],[.12,.03,z+3.5],[-.12,.03,z+3.5]],'#e4d47b');
-}
-function draw(){
- ctx.fillStyle='#9fc8df';ctx.fillRect(0,0,W,H);
- const sky=ctx.createLinearGradient(0,0,0,H*.65);
- sky.addColorStop(0,'#8fc6e4');sky.addColorStop(1,'#dce9ed');
- ctx.fillStyle=sky;ctx.fillRect(0,0,W,H*.65);
- ground();
- const items=[];
- houses.forEach(q=>items.push({p:worldToCam(q.x,1.5,q.z),fn:()=>house(q)}));
- trees.forEach(q=>items.push({p:worldToCam(q.x,1,q.z),fn:()=>tree(q)}));
- poles.forEach(q=>items.push({p:worldToCam(q.x,2.5,q.z),fn:()=>pole(q)}));
- items.sort((a,b)=>b.p.z-a.p.z).forEach(i=>i.fn());
-}
-function update(now){
- const dt=Math.min(.04,(now-last)/1000);last=now;
- const speed=5.2;
- const f=-joyY*speed*dt,r=joyX*speed*dt;
- const cy=Math.cos(cam.yaw),sy=Math.sin(cam.yaw);
- cam.x += r*cy + f*sy;
- cam.z += r*(-sy) + f*cy;
- requestAnimationFrame(update);
-}
-function joyMove(e){
- const r=joy.getBoundingClientRect(),dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2),m=42,n=Math.hypot(dx,dy);
- const k=Math.min(1,m/Math.max(n,1));const X=dx*k,Y=dy*k;
- joyX=X/m;joyY=Y/m;stick.style.transform='translate('+X+'px,'+Y+'px)';
-}
-joy.addEventListener('pointerdown',e=>{joy.setPointerCapture(e.pointerId);joyMove(e)});
-joy.addEventListener('pointermove',e=>joyMove(e));
-function joyUp(){joyX=joyY=0;stick.style.transform='translate(0,0)'}
-joy.addEventListener('pointerup',joyUp);joy.addEventListener('pointercancel',joyUp);joy.addEventListener('lostpointercapture',joyUp);
-let looking=false,lx=0,ly=0;
-look.addEventListener('pointerdown',e=>{looking=true;lx=e.clientX;ly=e.clientY;look.setPointerCapture(e.pointerId)});
-look.addEventListener('pointermove',e=>{if(!looking)return;const dx=e.clientX-lx,dy=e.clientY-ly;lx=e.clientX;ly=e.clientY;cam.yaw-=dx*.006;cam.pitch=Math.max(-.65,Math.min(.65,cam.pitch-dy*.004))});
-look.addEventListener('pointerup',()=>looking=false);look.addEventListener('pointercancel',()=>looking=false);
-try{draw();requestAnimationFrame(update)}catch(e){err.style.display='block';err.textContent='ERRO:\n'+e.stack}
-})();
-</script>
-</body>
-</html>
+function tree(t){let[x,z,s]=t;cube(x,.1,z,.3,2*s,.3,'#65432d');let p=P(tr(x,2.8*s,z));if(!p)return;let r=Math.max(5,70*s/p[2]);g.fillStyle='#3e7b45';g.beginPath();g.arc(p[0],p[1],r,0,7);g.fill();g.fillStyle='#4d8d4f';g.beginPath();g.arc(p[0]-r*.35,p[1]-r*.1,r*.65,0,7);g.fill()}
+function pole(q){let[x,z]=q;cube(x,0,z,.12,5,.12,'#5b5b57');let a=P(tr(x,5,z)),b=P(tr(x,5,z+7));if(a&&b){g.strokeStyle='#30302f';g.lineWidth=2;g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke()}}
+function ground(){face([[-30,0,-30],[30,0,-30],[30,0,80],[-30,0,80]],'#6f9658');face([[-3.2,.01,-30],[3.2,.01,-30],[3.2,.01,80],[-3.2,.01,80]],'#505050');face([[-5,.02,-30],[-3.2,.02,-30],[-3.2,.02,80],[-5,.02,80]],'#c9c1b7');face([[3.2,.02,-30],[5,.02,-30],[5,.02,80],[3.2,.02,80]],'#c9c1b7');for(let z=-20;z<80;z+=8)face([[-.11,.03,z],[.11,.03,z],[.11,.03,z+3],[-.11,.03,z+3]],'#e4d47b')}
+function draw(){g.fillStyle='#9cc9df';g.fillRect(0,0,W,H);let sky=g.createLinearGradient(0,0,0,H*.65);sky.addColorStop(0,'#83bddd');sky.addColorStop(1,'#dce9ed');g.fillStyle=sky;g.fillRect(0,0,W,H*.65);ground();let a=[];houses.forEach(h=>a.push([h[1],()=>house(h)]));trees.forEach(t=>a.push([t[1],()=>tree(t)]));poles.forEach(p=>a.push([p[1],()=>pole(p)]));a.sort((u,v)=>tr(0,1,v[0])[2]-tr(0,1,u[0])[2]);a.forEach(x=>x[1]());requestAnimationFrame(draw)}
+function move(e){let r=joy.getBoundingClientRect(),x=e.clientX-r.left-r.width/2,y=e.clientY-r.top-r.height/2,n=Math.hypot(x,y),m=40;if(n>m){x*=m/n;y*=m/n}jx=x/m;jy=y/m;knob.style.transform='translate('+x+'px,'+y+'px)'}
+joy.onpointerdown=e=>{joy.setPointerCapture(e.pointerId);move(e)};joy.onpointermove=move;function stop(){jx=jy=0;knob.style.transform='translate(0,0)'}joy.onpointerup=stop;joy.onpointercancel=stop;joy.onlostpointercapture=stop;
+look.onpointerdown=e=>{drag=true;lx=e.clientX;ly=e.clientY;look.setPointerCapture(e.pointerId)};look.onpointermove=e=>{if(!drag)return;let dx=e.clientX-lx,dy=e.clientY-ly;lx=e.clientX;ly=e.clientY;cam.a-=dx*.006;cam.p=Math.max(-.7,Math.min(.7,cam.p-dy*.004))};look.onpointerup=look.onpointercancel=()=>drag=false;
+let old=performance.now();function tick(t){let dt=Math.min(.04,(t-old)/1000);old=t;let speed=4.8*dt,ca=Math.cos(cam.a),sa=Math.sin(cam.a);cam.x+=(-jy*sa+jx*ca)*speed;cam.z+=(-jy*ca-jx*sa)*speed;requestAnimationFrame(tick)}draw();requestAnimationFrame(tick);
+</script></body></html>
