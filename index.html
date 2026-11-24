@@ -155,23 +155,46 @@ function house(h){
  });
  for(const f of roofFaces)poly(f.pts,f.fill);
 
- // Fachada mais próxima. Os detalhes ficam sobre uma parede
- // completa, para a casa nunca parecer vazada do lado do jogador.
- const q=cam(h.x,h.z);
- const front=q.f>=0;
- const facadeZ=front?z1-.012:z2+.012;
+ // Fachada voltada para a rua: as casas ficam nas laterais da estrada,
+ // então a parede que precisa fechar o interior é a parede x1/x2.
+ const streetSide=h.x<0 ? x2 : x1;
+ const streetOut=h.x<0 ? 1 : -1;
 
- // Parede do lado mais próximo do jogador, desenhada como uma
- // superfície sólida independente. Isso impede que a casa pareça vazada.
- const wallCandidates=[
-   {d:Math.hypot(C.x-h.x,C.z-z1),pts:[hp(x1,z1,0),hp(x2,z1,0),hp(x2,z1,Hh),hp(x1,z1,Hh)],fill:h.wall,front:true},
-   {d:Math.hypot(C.x-h.x,C.z-z2),pts:[hp(x2,z2,0),hp(x1,z2,0),hp(x1,z2,Hh),hp(x2,z2,Hh)],fill:shade(h.side,-22),front:false},
-   {d:Math.hypot(C.x-x1,C.z-h.z),pts:[hp(x1,z2,0),hp(x1,z1,0),hp(x1,z1,Hh),hp(x1,z2,Hh)],fill:shade(h.side,-16),front:false},
-   {d:Math.hypot(C.x-x2,C.z-h.z),pts:[hp(x2,z1,0),hp(x2,z2,0),hp(x2,z2,Hh),hp(x2,z1,Hh)],fill:h.side,front:false}
- ];
- wallCandidates.sort((a,b)=>a.d-b.d);
- const nearestWall=wallCandidates[0];
- poly(nearestWall.pts,nearestWall.fill);
+ // Parede sólida inteira voltada para a rua.
+ const sw1=hp(streetSide,z1,0),sw2=hp(streetSide,z2,0);
+ const sw3=hp(streetSide,z2,Hh),sw4=hp(streetSide,z1,Hh);
+ poly([sw1,sw2,sw3,sw4],h.wall);
+
+ // A fachada da rua usa uma projeção própria, perpendicular à estrada.
+ function streetPanel(cz,cy,w,hgt,fill,border){
+   const zz=cz;
+   const p1=hp(streetSide+streetOut*.014,zz-w/2,cy-hgt/2);
+   const p2=hp(streetSide+streetOut*.014,zz+w/2,cy-hgt/2);
+   const p3=hp(streetSide+streetOut*.014,zz+w/2,cy+hgt/2);
+   const p4=hp(streetSide+streetOut*.014,zz-w/2,cy+hgt/2);
+   poly([p1,p2,p3,p4],fill);
+   if(border)line([p1,p2,p3,p4,p1],border,Math.max(1,p1.s*.012));
+   return{p1,p2,p3,p4};
+ }
+
+ // Porta e janelas agora ficam na parede que realmente está de frente para a rua.
+ const door=streetPanel(h.z,1.0,.82,1.75,h.door,"#3a2a24");
+ const win1=streetPanel(h.z+1.45,2.02,1.12,.78,h.win,h.trim);
+ const win2=streetPanel(h.z-.95,2.08,.82,.66,h.win,h.trim);
+
+ function crossStreet(w){
+   const mx=(w.p1.x+w.p2.x)/2,my=(w.p1.y+w.p3.y)/2;
+   line([{x:mx,y:w.p1.y},{x:mx,y:w.p3.y}],"#52666a",Math.max(1,w.p1.s*.008));
+   line([{x:w.p1.x,y:my},{x:w.p2.x,y:my}],"#52666a",Math.max(1,w.p1.s*.008));
+ }
+ crossStreet(win1);crossStreet(win2);
+
+ if(h.style===0||h.style===3){
+   streetPanel(h.z+2.35,.72,.9,1.0,h.gate||"#5a514a","#393735");
+ }
+
+ // Fechamento lateral traseiro continua existindo para o volume ficar fechado.
+ const backZ=h.z+streetOut*.0;
 
  function panel(cx,cy,w,hgt,fill,border){
    const p1=hp(cx-w/2,facadeZ,cy-hgt/2);
