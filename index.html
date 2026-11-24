@@ -166,10 +166,10 @@ function tree(x,z){
  if(!base||!trunkTop)return;
 
  // Tronco robusto, com uma leve divisão no topo.
- const tw=Math.max(6,base.s*.16);
+ const tw=Math.max(10,base.s*.24);
  line([base,trunkTop],"#60422d",tw);
  const forkL=proj(x-.38,z,3.35),forkR=proj(x+.38,z,3.35);
- if(forkL)line([trunkTop,forkL],"#60422d",Math.max(4,base.s*.08));
+ if(forkL)line([trunkTop,forkL],"#60422d",Math.max(6,base.s*.11));
  if(forkR)line([trunkTop,forkR],"#60422d",Math.max(4,base.s*.08));
 
  // Copa grande e irregular, construída em camadas.
