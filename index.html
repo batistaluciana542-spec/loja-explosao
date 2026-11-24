@@ -43,44 +43,73 @@ function col(c,n){let v=parseInt(c.slice(1),16),r=Math.max(0,Math.min(255,(v>>16
 
 function house(h){
  let [cx,cz,w,d,hgt,base,roof]=h;
- let v=[
-  proj(cx-w/2,0,cz-d/2),proj(cx+w/2,0,cz-d/2),proj(cx+w/2,hgt,cz-d/2),proj(cx-w/2,hgt,cz-d/2),
-  proj(cx-w/2,0,cz+d/2),proj(cx+w/2,0,cz+d/2),proj(cx+w/2,hgt,cz+d/2),proj(cx-w/2,hgt,cz+d/2)
+ const y0=0,y1=hgt;
+ const V=[
+  proj(cx-w/2,y0,cz-d/2),proj(cx+w/2,y0,cz-d/2),proj(cx+w/2,y1,cz-d/2),proj(cx-w/2,y1,cz-d/2),
+  proj(cx-w/2,y0,cz+d/2),proj(cx+w/2,y0,cz+d/2),proj(cx+w/2,y1,cz+d/2),proj(cx-w/2,y1,cz+d/2)
  ];
- if(v.some(q=>!q))return;
- face([v[4],v[5],v[6],v[7]],col(base,-25));
- face([v[1],v[5],v[6],v[2]],col(base,-12));
- face([v[0],v[1],v[2],v[3]],base);
- face([v[4],v[0],v[3],v[7]],col(base,-18));
- const roofPeak=proj(cx,hgt+1.05,cz-d/2);
- face([v[3],v[2],roofPeak],roof);
- const door=proj(cx,hgt*.48,cz-d/2-.02);
- if(door){X.fillStyle='#49342d';X.fillRect(door.x-door.s*.035,door.y-door.s*.11,door.s*.07,door.s*.22)}
+ if(V.some(q=>!q))return;
+ // Caixa totalmente fechada: frente, trás e duas laterais.
+ face([V[0],V[1],V[2],V[3]],base);
+ face([V[1],V[5],V[6],V[2]],col(base,-12));
+ face([V[5],V[4],V[7],V[6]],col(base,-25));
+ face([V[4],V[0],V[3],V[7]],col(base,-18));
+ // Fundo/parede traseira opaca.
+ face([V[3],V[2],V[6],V[7]],col(base,-8));
+ // Telhado completo, dos dois lados.
+ const peakFront=proj(cx,y1+1.05,cz-d/2);
+ const peakBack=proj(cx,y1+1.05,cz+d/2);
+ if(peakFront&&peakBack){
+  face([V[3],V[2],peakFront],roof);
+  face([V[7],peakBack,peakFront,V[3]],col(roof,-12));
+  face([V[6],V[2],peakFront,peakBack],col(roof,-20));
+  face([V[4],V[5],peakBack],col(roof,-8));
+ }
+ // Porta e janelas só na fachada da frente.
+ const door=proj(cx,y1*.47,cz-d/2-.035);
+ if(door){X.fillStyle='#49342d';X.fillRect(door.x-door.s*.04,door.y-door.s*.13,door.s*.08,door.s*.26)}
  for(const wx of [cx-w*.28,cx+w*.28]){
-  const q=proj(wx,hgt*.62,cz-d/2-.03);
-  if(q){X.fillStyle='#a8c9d1';X.fillRect(q.x-q.s*.05,q.y-q.s*.045,q.s*.1,q.s*.09);X.strokeStyle='#555';X.lineWidth=1;X.strokeRect(q.x-q.s*.05,q.y-q.s*.045,q.s*.1,q.s*.09)}
+  const q=proj(wx,y1*.63,cz-d/2-.04);
+  if(q){
+   X.fillStyle='#9ec6d1';X.fillRect(q.x-q.s*.055,q.y-q.s*.05,q.s*.11,q.s*.10);
+   X.strokeStyle='#454545';X.lineWidth=Math.max(1,q.s*.008);X.strokeRect(q.x-q.s*.055,q.y-q.s*.05,q.s*.11,q.s*.10);
+   X.beginPath();X.moveTo(q.x,q.y-q.s*.05);X.lineTo(q.x,q.y+q.s*.05);X.moveTo(q.x-q.s*.055,q.y);X.lineTo(q.x+q.s*.055,q.y);X.stroke();
+  }
  }
 }
 function tree(t){
- let [cx,cz,s]=t,b=proj(cx,0,cz),tr=proj(cx,3.1*s,cz);if(!b||!tr)return;
- X.strokeStyle='#60452e';X.lineWidth=Math.max(2,b.s*.035);X.beginPath();X.moveTo(b.x,b.y);X.lineTo(tr.x,tr.y);X.stroke();
- for(const [x,y,z] of [[cx,2.6*s,cz],[cx-.55*s,2.3*s,cz],[cx+.55*s,2.3*s,cz]]){
-  let q=proj(x,y,z);if(!q)continue;X.fillStyle='#3d7445';X.beginPath();X.arc(q.x,q.y,Math.max(7,q.s*.24),0,Math.PI*2);X.fill();
+ let [cx,cz,s]=t;
+ const b=proj(cx,0,cz), top=proj(cx,3.4*s,cz);
+ if(!b||!top)return;
+ X.strokeStyle='#59402b';X.lineWidth=Math.max(2,b.s*.045);X.beginPath();X.moveTo(b.x,b.y);X.lineTo(top.x,top.y);X.stroke();
+ const parts=[
+  [cx,2.75*s,cz,0.42],[cx-.38*s,2.45*s,cz,0.34],[cx+.38*s,2.45*s,cz,0.34],
+  [cx,2.2*s,cz-.22*s,0.34],[cx,2.2*s,cz+.22*s,0.34]
+ ];
+ for(const [x,y,z,r] of parts){
+  const q=proj(x,y,z);if(!q)continue;
+  const rr=Math.max(8,q.s*r);
+  X.fillStyle='#2f6339';X.beginPath();X.arc(q.x,q.y,rr,0,Math.PI*2);X.fill();
+  X.fillStyle='#4b8148';X.beginPath();X.arc(q.x-rr*.22,q.y-rr*.22,rr*.58,0,Math.PI*2);X.fill();
  }
 }
 function pole(t){let a=proj(t[0],0,t[1]),b=proj(t[0],5.2,t[1]);if(!a||!b)return;X.strokeStyle='#555';X.lineWidth=Math.max(2,a.s*.025);X.beginPath();X.moveTo(a.x,a.y);X.lineTo(b.x,b.y);X.stroke()}
 
+function strip(x1,x2,z1,z2,y,material){
+ const a=proj(x1,y,z1),b=proj(x2,y,z1),c=proj(x2,y,z2),d=proj(x1,y,z2);
+ if(!a||!b||!c||!d)return;
+ face([a,b,c,d],material);
+}
 function road(){
- // O chão é desenhado em coordenadas mundiais FIXAS. Nada é anexado à câmera.
- X.fillStyle='#94c8df';X.fillRect(0,0,W,H);
- X.fillStyle='#71965f';X.fillRect(0,H*.52,W,H*.48);
- const far=160;
- face([proj(-18,0,-20),proj(-3.55,0,-20),proj(-3.55,0,far),proj(-18,0,far)],'#73975f');
- face([proj(3.55,0,-20),proj(18,0,-20),proj(18,0,far),proj(3.55,0,far)],'#73975f');
- face([proj(-5.15,.01,-20),proj(-3.55,.01,-20),proj(-3.55,.01,far),proj(-5.15,.01,far)],'#b9b4aa');
- face([proj(3.55,.01,-20),proj(5.15,.01,-20),proj(5.15,.01,far),proj(3.55,.01,far)],'#b9b4aa');
- face([proj(-3.55,.02,-20),proj(3.55,.02,-20),proj(3.55,.02,far),proj(-3.55,.02,far)],'#505050');
- for(let z=-20;z<far;z+=8)face([proj(-.07,.04,z),proj(.07,.04,z),proj(.07,.04,z+3),proj(-.07,.04,z+3)],'#dfd27b');
+ // Céu é sempre céu. O verde não ocupa a tela inteira quando a câmera sobe.
+ X.fillStyle='#91c8e2';X.fillRect(0,0,W,H);
+ // Solo mundial, fixo. Usamos faixas em profundidade para manter perspectiva estável.
+ const near=P.z+.35, far=P.z+150;
+ strip(-18,18,near,far,0,'#6f955c');
+ strip(-5.15,-3.55,near,far,.012,'#b8b2a7');
+ strip(3.55,5.15,near,far,.012,'#b8b2a7');
+ strip(-3.55,3.55,near,far,.018,'#4f5050');
+ for(let z=near+3;z<far;z+=9) strip(-.075,.075,z,z+3,.035,'#e1d47d');
 }
 
 function render(){
