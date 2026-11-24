@@ -6,301 +6,197 @@
 <title>Rua 3D</title>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#87c9ee;font-family:Arial,sans-serif;touch-action:none}
-#game{position:fixed;inset:0}
-canvas{display:block;width:100%;height:100%;touch-action:none}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#8cccf0;touch-action:none;font-family:Arial,sans-serif}
+#game{position:fixed;inset:0;width:100%;height:100%;display:block}
 #hud{position:fixed;inset:0;pointer-events:none}
-#title{position:absolute;top:14px;left:14px;padding:8px 11px;border-radius:10px;background:rgba(0,0,0,.35);color:#fff;font-weight:700;font-size:13px}
+#title,#status,#hint{position:absolute;background:rgba(0,0,0,.35);color:#fff;border-radius:10px;padding:7px 10px;font-size:12px}
+#title{top:14px;left:14px;font-weight:bold}
+#status{top:14px;right:14px}
+#hint{bottom:18px;left:50%;transform:translateX(-50%);white-space:nowrap}
 #look{position:absolute;right:0;top:0;width:65%;height:100%;pointer-events:auto}
 #joystick{position:absolute;left:18px;bottom:22px;width:128px;height:128px;border-radius:50%;background:rgba(255,255,255,.18);border:2px solid rgba(255,255,255,.45);pointer-events:auto}
-#stick{position:absolute;left:35px;top:35px;width:54px;height:54px;border-radius:50%;background:rgba(255,255,255,.82)}
-#hint{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);padding:6px 9px;border-radius:9px;background:rgba(0,0,0,.32);color:#fff;font-size:11px;white-space:nowrap}
-#status{position:absolute;right:14px;top:14px;padding:7px 9px;border-radius:9px;background:rgba(0,0,0,.32);color:#fff;font-size:11px}
+#stick{position:absolute;left:35px;top:35px;width:54px;height:54px;border-radius:50%;background:rgba(255,255,255,.85)}
 </style>
 </head>
 <body>
-<div id="game"></div>
+<canvas id="game"></canvas>
 <div id="hud">
-  <div id="title">RUA 3D</div>
-  <div id="status">3D ATIVO</div>
-  <div id="look"></div>
-  <div id="joystick"><div id="stick"></div></div>
-  <div id="hint">Arraste à direita para olhar • joystick para andar</div>
+<div id="title">RUA 3D • MOTOR LOCAL</div>
+<div id="status">CARREGADO</div>
+<div id="look"></div>
+<div id="joystick"><div id="stick"></div></div>
+<div id="hint">Arraste à direita para olhar • joystick para andar</div>
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/three@0.181.1/build/three.min.js"></script>
 <script>
 (function(){
-'use strict';
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const status=document.getElementById('status');
+let W=0,H=0,DPR=1;
 
-if(!window.THREE){
-  document.getElementById('status').textContent='ERRO NO MOTOR 3D';
-  return;
+function resize(){
+ DPR=Math.min(devicePixelRatio||1,2);
+ W=innerWidth;H=innerHeight;
+ canvas.width=Math.floor(W*DPR);canvas.height=Math.floor(H*DPR);
+ canvas.style.width=W+'px';canvas.style.height=H+'px';
+ ctx.setTransform(DPR,0,0,DPR,0,0);
 }
+addEventListener('resize',resize);resize();
 
-const scene=new THREE.Scene();
-scene.background=new THREE.Color(0x87c9ee);
-
-const camera=new THREE.PerspectiveCamera(70,innerWidth/innerHeight,0.1,250);
-camera.position.set(0,1.65,18);
-
-let renderer;
-try{
-  renderer=new THREE.WebGLRenderer({antialias:true});
-}catch(e){
-  document.getElementById('status').textContent='WEBGL INDISPONÍVEL';
-  return;
-}
-renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));
-renderer.setSize(innerWidth,innerHeight);
-document.getElementById('game').appendChild(renderer.domElement);
-
-const mat={
- road:new THREE.MeshBasicMaterial({color:0x555555}),
- sidewalk:new THREE.MeshBasicMaterial({color:0xbdb8ad}),
- curb:new THREE.MeshBasicMaterial({color:0xd9d4c9}),
- grass:new THREE.MeshBasicMaterial({color:0x668452}),
- white:new THREE.MeshBasicMaterial({color:0xe8e2d7}),
- cream:new THREE.MeshBasicMaterial({color:0xd8c19f}),
- peach:new THREE.MeshBasicMaterial({color:0xc98270}),
- gray:new THREE.MeshBasicMaterial({color:0x77736f}),
- blue:new THREE.MeshBasicMaterial({color:0x5f91ae}),
- red:new THREE.MeshBasicMaterial({color:0xa95449}),
- roof:new THREE.MeshBasicMaterial({color:0x665044}),
- gate:new THREE.MeshBasicMaterial({color:0x33383b}),
- glass:new THREE.MeshBasicMaterial({color:0x355d6b}),
- wood:new THREE.MeshBasicMaterial({color:0x76503a}),
- green:new THREE.MeshBasicMaterial({color:0x4d753e}),
- trunk:new THREE.MeshBasicMaterial({color:0x684a35}),
- pole:new THREE.MeshBasicMaterial({color:0x777777}),
- wire:new THREE.MeshBasicMaterial({color:0x202020})
-};
-
-function box(w,h,d,x,y,z,material){
-  const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);
-  o.position.set(x,y,z);
-  scene.add(o);
-  return o;
-}
-
-function cylinder(r,h,x,y,z,material){
-  const o=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,10),material);
-  o.position.set(x,y,z);
-  scene.add(o);
-  return o;
-}
-
-// CHÃO
-box(14,.12,190,0,-.08,0,mat.road);
-box(7,.12,190,-10.5,-.02,0,mat.sidewalk);
-box(7,.12,190,10.5,-.02,0,mat.sidewalk);
-box(.28,.25,190,-6.95,.06,0,mat.curb);
-box(.28,.25,190,6.95,.06,0,mat.curb);
-
-// CRUZAMENTO
-box(35,.13,13,0,-.01,-24,mat.road);
-box(35,.12,2,0,.05,-17.5,mat.sidewalk);
-box(35,.12,2,0,.05,-30.5,mat.sidewalk);
-
-// CASAS SIMPLES E SEPARADAS
-const houseColors=[mat.cream,mat.white,mat.peach,mat.gray,mat.blue,mat.red];
-
-function house(x,z,i){
-  const w=6.6+(i%3)*.5;
-  const depth=5;
-  const h=3.1+(i%2)*.35;
-  const wall=houseColors[i%houseColors.length];
-
-  box(w,h,depth,x,h/2,z,wall);
-  box(w+.18,.25,depth+.18,x,h+.12,z,mat.white);
-
-  // fachada voltada para a rua
-  const front=z+(x<0?depth/2:-depth/2);
-
-  // portão
-  const gateW=2.5;
-  box(gateW,1.95,.14,x,1.0,front+(x<0?.08:-.08),mat.gate);
-
-  // porta
-  box(.9,1.9,.16,x+(i%2?1.7:-1.7),.95,front+(x<0?.1:-.1),mat.wood);
-
-  // janelas
-  const wx=x+(i%2?-1.7:1.7);
-  box(1.25,1.0,.12,wx,1.75,front+(x<0?.08:-.08),mat.glass);
-
-  // detalhe vertical
-  box(.08,1.15,.15,wx-.7,1.72,front+(x<0?.11:-.11),mat.white);
-  box(.08,1.15,.15,wx+.7,1.72,front+(x<0?.11:-.11),mat.white);
-
-  // pequena calçada de entrada
-  box(w-.3,.07,1.0,x,.12,front+(x<0?.55:-.55),mat.curb);
-}
-
-const zs=[-9,2,13,24,35,46,57];
-zs.forEach((z,i)=>house(-10,z,i));
-zs.forEach((z,i)=>house(10,z,i+3));
-
-// ÁRVORES
-function tree(x,z,s){
-  cylinder(.16*s,2.3*s,x,1.15*s,z,mat.trunk);
-  const crown=new THREE.Mesh(new THREE.SphereGeometry(1.25*s,10,8),mat.green);
-  crown.position.set(x,2.75*s,z);
-  scene.add(crown);
-}
-tree(-6.2,-2,.9);
-tree(6.2,7,.8);
-tree(-6.2,29,1);
-tree(6.2,43,.85);
-
-// POSTES
-function pole(x,z){
-  box(.16,7,.16,x,3.5,z,mat.pole);
-  box(2,.12,.12,x+(x<0?1:-1),6.55,z,mat.pole);
-}
-pole(-5.8,-12);
-pole(5.8,8);
-pole(-5.8,31);
-pole(5.8,54);
-
-// FIOS
-function wire(x){
-  const pts=[
-    new THREE.Vector3(x,6.55,-70),
-    new THREE.Vector3(x,6.15,0),
-    new THREE.Vector3(x,6.4,70)
-  ];
-  const curve=new THREE.CatmullRomCurve3(pts);
-  const tube=new THREE.Mesh(new THREE.TubeGeometry(curve,30,.018,5,false),mat.wire);
-  scene.add(tube);
-}
-wire(-5.8);
-wire(5.8);
-
-// CONTROLES
+const FOV=Math.PI/3;
+let px=0,pz=14,angle=0;
+let joyX=0,joyY=0;
 const keys={};
-addEventListener('keydown',e=>{keys[e.code]=true});
-addEventListener('keyup',e=>{keys[e.code]=false});
+addEventListener('keydown',e=>keys[e.code]=true);
+addEventListener('keyup',e=>keys[e.code]=false);
 
-const joystick=document.getElementById('joystick');
-const stick=document.getElementById('stick');
-let joyId=null,joyX=0,joyY=0;
-
-function updateJoy(e){
-  const r=joystick.getBoundingClientRect();
-  let dx=e.clientX-(r.left+r.width/2);
-  let dy=e.clientY-(r.top+r.height/2);
-  const max=34;
-  const len=Math.hypot(dx,dy);
-  if(len>max){dx=dx/len*max;dy=dy/len*max}
-  joyX=dx/max;
-  joyY=dy/max;
-  stick.style.transform='translate('+dx+'px,'+dy+'px)';
+const objects=[];
+function addHouse(x,z,w,d,h,color){
+ objects.push({type:'house',x,z,w,d,h,color});
 }
-joystick.addEventListener('pointerdown',e=>{
-  joyId=e.pointerId;
-  joystick.setPointerCapture(e.pointerId);
-  updateJoy(e);
-});
-joystick.addEventListener('pointermove',e=>{
-  if(e.pointerId===joyId)updateJoy(e);
-});
-function endJoy(e){
-  if(e.pointerId!==joyId)return;
-  joyId=null;joyX=0;joyY=0;
-  stick.style.transform='translate(0,0)';
+function addTree(x,z,s){
+ objects.push({type:'tree',x,z,w:.7*s,d:.7*s,h:3.8*s,color:'#4f7d45'});
 }
-joystick.addEventListener('pointerup',endJoy);
-joystick.addEventListener('pointercancel',endJoy);
+function addPole(x,z){
+ objects.push({type:'pole',x,z,w:.18,d:.18,h:7,color:'#777'});
+}
 
-// OLHAR
+const colors=['#d8c19f','#eee8dd','#c98473','#77736f','#6090ad','#aa554a','#d2b6a0'];
+[-9,2,13,24,35,46,57].forEach((z,i)=>{
+ addHouse(-9,z,6.2,5,3.0+(i%2)*.3,colors[i%colors.length]);
+ addHouse(9,z,6.2,5,3.0+((i+1)%2)*.3,colors[(i+3)%colors.length]);
+});
+addTree(-6.1,-2,.9);addTree(6.1,7,.8);addTree(-6.1,29,1);addTree(6.1,43,.85);
+addPole(-5.8,-12);addPole(5.8,8);addPole(-5.8,31);addPole(5.8,54);
+
+function norm(a){return Math.atan2(Math.sin(a),Math.cos(a))}
+function project(o){
+ let dx=o.x-px,dz=o.z-pz;
+ let dist=Math.hypot(dx,dz);
+ let rel=norm(Math.atan2(dx,-dz)-angle);
+ if(Math.abs(rel)>FOV*.72)return null;
+ let depth=dist*Math.cos(rel);
+ if(depth<.15)return null;
+ let sx=W/2+Math.tan(rel)/(Math.tan(FOV/2))*W/2;
+ return {dist,depth,sx};
+}
+
+function render(){
+ ctx.clearRect(0,0,W,H);
+ ctx.fillStyle='#8cccf0';ctx.fillRect(0,0,W,H*.52);
+ ctx.fillStyle='#86a878';ctx.fillRect(0,H*.52,W,H*.48);
+
+ // rua
+ const horizon=H*.52;
+ ctx.fillStyle='#555';
+ ctx.beginPath();
+ ctx.moveTo(W*.36,horizon);ctx.lineTo(W*.64,horizon);ctx.lineTo(W*.93,H);ctx.lineTo(W*.07,H);ctx.closePath();ctx.fill();
+
+ // calçadas
+ ctx.fillStyle='#bdb8ad';
+ ctx.beginPath();ctx.moveTo(0,horizon);ctx.lineTo(W*.36,horizon);ctx.lineTo(W*.07,H);ctx.lineTo(0,H);ctx.closePath();ctx.fill();
+ ctx.beginPath();ctx.moveTo(W*.64,horizon);ctx.lineTo(W,horizon);ctx.lineTo(W,H);ctx.lineTo(W*.93,H);ctx.closePath();ctx.fill();
+
+ // linha central
+ ctx.strokeStyle='rgba(255,255,255,.55)';ctx.lineWidth=3;
+ ctx.setLineDash([20,22]);ctx.beginPath();ctx.moveTo(W/2,horizon);ctx.lineTo(W/2,H);ctx.stroke();ctx.setLineDash([]);
+
+ const visible=objects.map(o=>({o,p:project(o)})).filter(x=>x.p).sort((a,b)=>b.p.dist-a.p.dist);
+
+ for(const item of visible){
+   const o=item.o,p=item.p;
+   const scale=H/p.depth;
+   if(o.type==='house'){
+     const half=o.w/2;
+     const left=projectPoint(o.x-half,o.z,o);
+     const right=projectPoint(o.x+half,o.z,o);
+     const width=Math.max(8,Math.abs(right-left));
+     const height=Math.min(H*2,o.h*scale*.72);
+     const bottom=horizon+(H-horizon)*Math.min(1,35/(p.depth+35));
+     const top=bottom-height;
+     ctx.fillStyle=o.color;
+     ctx.fillRect(p.sx-width/2,top,width,height);
+     ctx.fillStyle='rgba(255,255,255,.75)';
+     ctx.fillRect(p.sx-width*.26,top+height*.34,width*.18,height*.22);
+     ctx.fillStyle='#353535';
+     ctx.fillRect(p.sx+width*.08,top+height*.30,width*.25,height*.70);
+     ctx.fillStyle='rgba(0,0,0,.18)';
+     ctx.fillRect(p.sx-width/2,top,width,Math.max(3,height*.035));
+   }else if(o.type==='tree'){
+     const r=Math.max(3,scale*.75);
+     const bottom=horizon+(H-horizon)*Math.min(1,30/(p.depth+30));
+     ctx.fillStyle='#684a35';ctx.fillRect(p.sx-r*.12,bottom-r*2.5,r*.24,r*2.5);
+     ctx.fillStyle=o.color;ctx.beginPath();ctx.arc(p.sx,bottom-r*2.7,r,0,Math.PI*2);ctx.fill();
+     ctx.fillStyle='#63864e';ctx.beginPath();ctx.arc(p.sx+r*.45,bottom-r*3,r*.65,0,Math.PI*2);ctx.fill();
+   }else{
+     const h=Math.min(H*1.3,scale*o.h*.72);
+     const bottom=horizon+(H-horizon)*Math.min(1,30/(p.depth+30));
+     ctx.fillStyle='#777';ctx.fillRect(p.sx-2,bottom-h,4,h);
+     ctx.fillStyle='#333';ctx.fillRect(p.sx-14,bottom-h,28,3);
+   }
+ }
+}
+
+function projectPoint(x,z,o){
+ const dx=x-px,dz=z-pz;
+ const rel=norm(Math.atan2(dx,-dz)-angle);
+ return W/2+Math.tan(rel)/(Math.tan(FOV/2))*W/2;
+}
+
+let last=performance.now();
+function loop(now){
+ const dt=Math.min(.05,(now-last)/1000);last=now;
+ let f=0,s=0;
+ if(keys.KeyW||keys.ArrowUp)f++;
+ if(keys.KeyS||keys.ArrowDown)f--;
+ if(keys.KeyA||keys.ArrowLeft)s--;
+ if(keys.KeyD||keys.ArrowRight)s++;
+ f+=-joyY;s+=joyX;
+ const len=Math.hypot(f,s);if(len>1){f/=len;s/=len}
+ const speed=4.0*dt;
+ px+=(Math.sin(angle)*f+Math.cos(angle)*s)*speed;
+ pz+=(-Math.cos(angle)*f+Math.sin(angle)*s)*speed;
+ px=Math.max(-5.7,Math.min(5.7,px));
+ pz=Math.max(-68,Math.min(68,pz));
+ render();
+ requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+// olhar
 const look=document.getElementById('look');
-let lookId=null,lastX=0,lastY=0;
-let yaw=0;
-let pitch=0;
-
+let lookId=null,lastX=0;
 look.addEventListener('pointerdown',e=>{
-  lookId=e.pointerId;
-  look.setPointerCapture(e.pointerId);
-  lastX=e.clientX;
-  lastY=e.clientY;
+ lookId=e.pointerId;lastX=e.clientX;look.setPointerCapture(e.pointerId);
 });
-
 look.addEventListener('pointermove',e=>{
-  if(e.pointerId!==lookId)return;
-  const dx=e.clientX-lastX;
-  const dy=e.clientY-lastY;
-  yaw-=dx*.004;
-  pitch+=dy*.003;
-  pitch=Math.max(-1.15,Math.min(1.15,pitch));
-  lastX=e.clientX;
-  lastY=e.clientY;
+ if(e.pointerId!==lookId)return;
+ angle+=(e.clientX-lastX)*.005;
+ lastX=e.clientX;
 });
+look.addEventListener('pointerup',e=>{if(e.pointerId===lookId)lookId=null});
+look.addEventListener('pointercancel',e=>{if(e.pointerId===lookId)lookId=null});
 
-look.addEventListener('pointerup',e=>{
-  if(e.pointerId===lookId)lookId=null;
-});
-look.addEventListener('pointercancel',e=>{
-  if(e.pointerId===lookId)lookId=null;
-});
-
-// MOVIMENTO
-const clock=new THREE.Clock();
-
-function move(dt){
-  let forward=0;
-  let side=0;
-
-  if(keys.KeyW||keys.ArrowUp)forward+=1;
-  if(keys.KeyS||keys.ArrowDown)forward-=1;
-  if(keys.KeyA||keys.ArrowLeft)side-=1;
-  if(keys.KeyD||keys.ArrowRight)side+=1;
-
-  forward+=-joyY;
-  side+=joyX;
-
-  const len=Math.hypot(forward,side);
-  if(len>1){forward/=len;side/=len}
-
-  const speed=4.2*dt;
-
-  // Direção correta: yaw 0 = olhando para frente, eixo -Z.
-  const fx=Math.sin(yaw);
-  const fz=-Math.cos(yaw);
-  const rx=Math.cos(yaw);
-  const rz=Math.sin(yaw);
-
-  camera.position.x+=(fx*forward+rx*side)*speed;
-  camera.position.z+=(fz*forward+rz*side)*speed;
-
-  // Limites seguros da rua
-  camera.position.x=Math.max(-5.7,Math.min(5.7,camera.position.x));
-  camera.position.z=Math.max(-70,Math.min(70,camera.position.z));
-  camera.position.y=1.65;
-
-  // Câmera sempre olha para frente, sem ficar de cabeça para baixo.
-  const cp=Math.cos(pitch);
-  const target=new THREE.Vector3(
-    camera.position.x+fx*cp,
-    camera.position.y+Math.sin(pitch),
-    camera.position.z+fz*cp
-  );
-  camera.lookAt(target);
+// joystick
+const joy=document.getElementById('joystick'),stick=document.getElementById('stick');
+let joyId=null;
+function joyMove(e){
+ const r=joy.getBoundingClientRect();
+ let dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2);
+ const max=34,l=Math.hypot(dx,dy);
+ if(l>max){dx=dx/l*max;dy=dy/l*max}
+ joyX=dx/max;joyY=dy/max;
+ stick.style.transform='translate('+dx+'px,'+dy+'px)';
 }
-
-function animate(){
-  requestAnimationFrame(animate);
-  const dt=Math.min(clock.getDelta(),.05);
-  move(dt);
-  renderer.render(scene,camera);
+joy.addEventListener('pointerdown',e=>{joyId=e.pointerId;joy.setPointerCapture(e.pointerId);joyMove(e)});
+joy.addEventListener('pointermove',e=>{if(e.pointerId===joyId)joyMove(e)});
+function joyEnd(e){
+ if(e.pointerId!==joyId)return;
+ joyId=null;joyX=joyY=0;stick.style.transform='translate(0,0)';
 }
+joy.addEventListener('pointerup',joyEnd);joy.addEventListener('pointercancel',joyEnd);
 
-addEventListener('resize',()=>{
-  camera.aspect=innerWidth/innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(innerWidth,innerHeight);
-});
-
-animate();
+status.textContent='3D LOCAL • OK';
 })();
 </script>
 </body>
