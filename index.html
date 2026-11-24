@@ -92,39 +92,106 @@ function ground(){
    telhado de duas águas, porta recuada visualmente, janelas com moldura,
    muro frontal e pequeno jardim. Nada de fachada solta. */
 function house(h){
- const x1=h.x-h.w/2,x2=h.x+h.w/2,z1=h.z-h.d/2,z2=h.z+h.d/2,Hh=h.h,roofH=Hh+.72;
+ const x1=h.x-h.w/2,x2=h.x+h.w/2,z1=h.z-h.d/2,z2=h.z+h.d/2,Hh=h.h,roofH=Hh+.78;
  function hp(x,z,y=0){return proj(x,z,y)}
- function P(p,f){if(p.some(v=>!v))return;poly(p,f)}
- const q=cam(h.x,h.z),front=q.f>=0,fz=front?z1-.03:z2+.03;
-
- // Volume fechado. Apenas quatro faces + telhado.
+ function P(p,f,stroke){
+   if(p.some(v=>!v))return;
+   poly(p,f);
+   if(stroke)line([...p,p[0]],stroke,Math.max(1,(p[0].s||1)*.009));
+ }
+ const q=cam(h.x,h.z),front=q.f>=0,fz=front?z1-.04:z2+.04;
  const A=hp(x1,z1,0),B=hp(x2,z1,0),C=hp(x2,z2,0),D=hp(x1,z2,0);
  const E=hp(x1,z1,Hh),F=hp(x2,z1,Hh),G=hp(x2,z2,Hh),I=hp(x1,z2,Hh);
+
+ // Corpo fechado
  const fs=[
   {p:[A,B,F,E],d:A?.d||0,c:h.wall},
   {p:[B,C,G,F],d:B?.d||0,c:h.side},
   {p:[C,D,I,G],d:C?.d||0,c:shade(h.side,-24)},
   {p:[D,A,E,I],d:D?.d||0,c:shade(h.side,-12)}
  ];
- fs.sort((u,v)=>v.d-u.d).forEach(f=>P(f.p,f.c));
+ fs.sort((u,v)=>v.d-u.d).forEach(f=>P(f.p,f.c,shade(h.trim,-18)));
 
- const e=.3,r1=hp(x1-e,z1-e,Hh),r2=hp(x2+e,z1-e,Hh),r3=hp(h.x,z1-e,roofH);
+ // Telhado grosso
+ const e=.32,r1=hp(x1-e,z1-e,Hh),r2=hp(x2+e,z1-e,Hh),r3=hp(h.x,z1-e,roofH);
  const r4=hp(x2+e,z2+e,Hh),r5=hp(h.x,z2+e,roofH),r6=hp(x1-e,z2+e,Hh);
- P([r1,r2,r3],shade(h.roof,10));P([r3,r2,r4,r5],h.roof);
- P([r6,r5,r3,r1],shade(h.roof,-18));P([r5,r4,r6],shade(h.roof,-8));
+ P([r1,r2,r3],shade(h.roof,12),shade(h.roof,-28));
+ P([r3,r2,r4,r5],h.roof,shade(h.roof,-32));
+ P([r6,r5,r3,r1],shade(h.roof,-18),shade(h.roof,-35));
+ P([r5,r4,r6],shade(h.roof,-8),shade(h.roof,-35));
 
- // Fachada frontal simples, sem loops ou objetos extras.
- P([hp(x1,fz,0),hp(x2,fz,0),hp(x2,fz,Hh),hp(x1,fz,Hh)],h.wall);
+ // Fachada
+ P([hp(x1,fz,0),hp(x2,fz,0),hp(x2,fz,Hh),hp(x1,fz,Hh)],h.wall,shade(h.trim,-25));
 
- const dx=h.x-.82;
- P([hp(dx-.45,fz-.01,.2),hp(dx+.45,fz-.01,.2),hp(dx+.45,fz-.01,1.92),hp(dx-.45,fz-.01,1.92)],h.door);
+ // Faixa superior e rodapé
+ P([hp(x1+.08,fz,.03),hp(x2-.08,fz,.03),hp(x2-.08,fz,.24),hp(x1+.08,fz,.24)],shade(h.wall,-20),h.trim);
+ P([hp(x1+.08,fz,Hh-.22),hp(x2-.08,fz,Hh-.22),hp(x2-.08,fz,Hh-.06),hp(x1+.08,fz,Hh-.06)],shade(h.wall,10),h.trim);
+
+ // Entrada recuada
+ const px=h.x-.78,pw=1.9,pBack=fz+(front?.52:-.52);
+ P([hp(px-pw/2,fz,.05),hp(px+pw/2,fz,.05),hp(px+pw/2,fz,2.12),hp(px-pw/2,fz,2.12)],shade(h.wall,5),h.trim);
+ P([hp(px-pw/2,pBack,.05),hp(px+pw/2,pBack,.05),hp(px+pw/2,pBack,2.12),hp(px-pw/2,pBack,2.12)],shade(h.wall,-12),h.trim);
+ P([hp(px-pw/2,fz,.05),hp(px-pw/2,pBack,.05),hp(px-pw/2,pBack,2.12),hp(px-pw/2,fz,2.12)],shade(h.wall,-22));
+ P([hp(px+pw/2,pBack,.05),hp(px+pw/2,fz,.05),hp(px+pw/2,fz,2.12),hp(px+pw/2,pBack,2.12)],shade(h.wall,-28));
+
+ // Degraus, só 2
+ for(let k=0;k<2;k++){
+   const zz=fz+(front?-.18-k*.16:.18+k*.16), yy=.06+k*.1;
+   P([hp(px-1,zz,yy),hp(px+1,zz,yy),hp(px+1,zz+(front?-.16:.16),yy),hp(px-1,zz+(front?-.16:.16),yy)],shade(h.trim,-10),shade(h.trim,-30));
+ }
+
+ // Porta
+ const dz=fz+(front?-.06:.06);
+ P([hp(px-.45,dz,.2),hp(px+.45,dz,.2),hp(px+.45,dz,1.92),hp(px-.45,dz,1.92)],h.door,shade(h.trim,-32));
 
  function win(cx,cy,w,hh){
-   P([hp(cx-w/2,fz-.02,cy-hh/2),hp(cx+w/2,fz-.02,cy-hh/2),hp(cx+w/2,fz-.02,cy+hh/2),hp(cx-w/2,fz-.02,cy+hh/2)],h.trim);
-   P([hp(cx-w/2+.08,fz-.025,cy-hh/2+.08),hp(cx+w/2-.08,fz-.025,cy-hh/2+.08),hp(cx+w/2-.08,fz-.025,cy+hh/2-.08),hp(cx-w/2+.08,fz-.025,cy+hh/2-.08)],h.win);
+   const oz=fz+(front?-.065:.065);
+   P([hp(cx-w/2,oz,cy-hh/2),hp(cx+w/2,oz,cy-hh/2),hp(cx+w/2,oz,cy+hh/2),hp(cx-w/2,oz,cy+hh/2)],h.trim,shade(h.trim,-35));
+   const iz=oz+(front?-.035:.035);
+   P([hp(cx-w/2+.08,iz,cy-hh/2+.08),hp(cx+w/2-.08,iz,cy-hh/2+.08),hp(cx+w/2-.08,iz,cy+hh/2-.08),hp(cx-w/2+.08,iz,cy+hh/2-.08)],h.win);
+   line([hp(cx,iz,cy-hh/2+.09),hp(cx,iz,cy+hh/2-.09)],shade(h.trim,-42),1.5);
+   line([hp(cx-w/2+.09,iz,cy),hp(cx+w/2-.09,iz,cy)],shade(h.trim,-42),1.5);
  }
- win(h.x+.92,2.05,1.35,.9);win(h.x-2.05,2.0,1.05,.82);
+ win(h.x+.92,2.05,1.35,.9);
+ win(h.x-2.05,2.0,1.05,.82);
+
+ // Marquise
+ P([hp(px-.58,fz-.22,1.94),hp(px+.58,fz-.22,1.94),hp(px+.48,fz-.43,2.08),hp(px-.48,fz-.43,2.08)],shade(h.roof,-4),shade(h.roof,-28));
+
+ // Grade ou jardineira, um único elemento por casa
+ if(h.style===0||h.style===3){
+   const gx=h.x+1.95,gz=fz+(front?-.08:.08);
+   P([hp(gx-.58,gz,.08),hp(gx+.58,gz,.08),hp(gx+.58,gz,1.15),hp(gx-.58,gz,1.15)],h.gate||"#4e4b47","#292827");
+ }else{
+   const bx=h.x+.92,bz=fz+(front?-.08:.08);
+   P([hp(bx-.68,bz,1.38),hp(bx+.68,bz,1.38),hp(bx+.68,bz,1.56),hp(bx-.68,bz,1.56)],"#714b36","#4b3427");
+   const fl=hp(bx,bz,1.72);
+   if(fl){ctx.fillStyle="#5b8a4b";ctx.beginPath();ctx.arc(fl.x,fl.y,Math.max(3,fl.s*.08),0,Math.PI*2);ctx.fill();}
+ }
+
+ // Muro frontal separado da casa
+ const mz=fz+(front?-.62:.62);
+ P([hp(x1-.25,mz,0),hp(h.x-1.55,mz,0),hp(h.x-1.55,mz,.52),hp(x1-.25,mz,.52)],shade(h.wall,-28),h.trim);
+ P([hp(h.x+1.55,mz,0),hp(x2+.25,mz,0),hp(x2+.25,mz,.52),hp(h.x+1.55,mz,.52)],shade(h.wall,-28),h.trim);
+
+ // Dois pilares simples
+ for(const xx of [x1-.08,x2+.08]){
+   P([hp(xx-.07,mz,.42),hp(xx+.07,mz,.42),hp(xx+.07,mz,1.45),hp(xx-.07,mz,1.45)],shade(h.trim,-22),shade(h.trim,-38));
+ }
+
+ // Detalhe de varanda em estilos alternados
+ if(h.style===1||h.style===3){
+   const bx=h.x+.65,bz=fz+(front?-.18:.18);
+   P([hp(bx-1.25,bz,2.38),hp(bx+1.25,bz,2.38),hp(bx+1.25,bz,2.52),hp(bx-1.25,bz,2.52)],shade(h.trim,-8),shade(h.trim,-32));
+   P([hp(bx-1.25,bz,.2),hp(bx+1.25,bz,.2),hp(bx+1.25,bz,2.38),hp(bx-1.25,bz,2.38)],shade(h.wall,-8),null);
+ }
+
+ // Um vaso, sem loop
+ const vp=hp(x1+.55,mz-.05,.38),vl=hp(x1+.55,mz-.05,.72);
+ if(vp){ctx.fillStyle="#86593d";ctx.beginPath();ctx.arc(vp.x,vp.y,Math.max(3,vp.s*.06),0,Math.PI*2);ctx.fill();}
+ if(vl){ctx.fillStyle="#4f8147";ctx.beginPath();ctx.arc(vl.x,vl.y,Math.max(4,vl.s*.09),0,Math.PI*2);ctx.fill();}
 }
+
 function tree(x,z){
  const base=proj(x,z,0), trunkTop=proj(x,z,3.0);
  if(!base||!trunkTop)return;
