@@ -86,11 +86,21 @@ function house(h){
   [x1,z1,Hh],[x2,z1,Hh],[x2,z2,Hh],[x1,z2,Hh],
   [h.x,z1,roofH],[h.x,z2,roofH]
  ];
- const p=verts.map(v=>proj(v[0],v[1],v[2]));
- if(p.some(v=>!v))return;
 
- // Faces independentes, ordenadas pela profundidade real do centro.
- // Assim nenhuma parede desaparece só porque a câmera girou alguns graus.
+ // Projeção própria das casas: não deixa uma única quina inválida
+ // apagar a face inteira. O renderer principal continua intocado.
+ function hp(x,z,hv=0){
+   const q=cam(x,z);
+   const focal=Math.min(W,H)*.92;
+   const pc=Math.cos(C.pitch);
+   const safeF=Math.max(q.f,.36);
+   const vertical=(hv-C.cameraH)*pc-q.f*Math.sin(C.pitch);
+   const depth=Math.max(safeF*pc+hv*Math.sin(C.pitch),.26);
+   const scale=focal/depth;
+   return{x:W/2+q.s*scale,y:H*.53-vertical*scale,s:scale,d:q.f};
+ }
+ const p=verts.map(v=>hp(v[0],v[1],v[2]));
+
  const faces=[
   {ids:[0,1,5,4],fill:h.wall},
   {ids:[1,2,6,5],fill:h.side},
@@ -101,36 +111,38 @@ function house(h){
   {ids:[6,7,9],fill:shade(h.roof,-14)},
   {ids:[7,4,8,9],fill:shade(h.roof,-8)}
  ];
- const faceDepth=(f)=>{
-   let d=0,n=0;
-   for(const id of f.ids){d+=p[id].d;n++}
-   return d/n;
- };
- faces.sort((a,b)=>faceDepth(b)-faceDepth(a));
+
+ // Painter's algorithm por face, sempre desenhando todas as faces.
+ faces.sort((a,b)=>{
+   let da=0,db=0;
+   for(const id of a.ids)da+=p[id].d;
+   for(const id of b.ids)db+=p[id].d;
+   return db/a.ids.length-da/b.ids.length;
+ });
  for(const f of faces)poly(f.ids.map(id=>p[id]),f.fill);
 
- // A fachada mais próxima recebe os detalhes.
+ // Fachada mais próxima. Os detalhes também usam hp(), então não
+ // desaparecem quando uma quina passa perto do plano da câmera.
  const q=cam(h.x,h.z);
  const front=q.f>=0;
  const facadeZ=front?z1-.012:z2+.012;
 
  function panel(cx,cy,w,hgt,fill,border){
-   const p1=proj(cx-w/2,facadeZ,cy-hgt/2);
-   const p2=proj(cx+w/2,facadeZ,cy-hgt/2);
-   const p3=proj(cx+w/2,facadeZ,cy+hgt/2);
-   const p4=proj(cx-w/2,facadeZ,cy+hgt/2);
-   if(!p1||!p2||!p3||!p4)return null;
+   const p1=hp(cx-w/2,facadeZ,cy-hgt/2);
+   const p2=hp(cx+w/2,facadeZ,cy-hgt/2);
+   const p3=hp(cx+w/2,facadeZ,cy+hgt/2);
+   const p4=hp(cx-w/2,facadeZ,cy+hgt/2);
    poly([p1,p2,p3,p4],fill);
    if(border)line([p1,p2,p3,p4,p1],border,Math.max(1,p1.s*.012));
    return{p1,p2,p3,p4};
  }
 
+ hp;
  panel(h.x-.72,1.0,.82,1.75,h.door,"#3a2a24");
  const win1=panel(h.x+.72,2.02,1.12,.78,h.win,h.trim);
  const win2=panel(h.x-.72,2.08,.82,.66,h.win,h.trim);
 
  function cross(w){
-   if(!w)return;
    const mx=(w.p1.x+w.p2.x)/2,my=(w.p1.y+w.p3.y)/2;
    line([{x:mx,y:w.p1.y},{x:mx,y:w.p3.y}],"#52666a",Math.max(1,w.p1.s*.008));
    line([{x:w.p1.x,y:my},{x:w.p2.x,y:my}],"#52666a",Math.max(1,w.p1.s*.008));
@@ -143,8 +155,8 @@ function house(h){
 
  const mz=front?z1-.46:z2+.46;
  function wallSeg(aa,bb){
-   const p1=proj(aa,mz,0),p2=proj(bb,mz,0),p3=proj(bb,mz,.5),p4=proj(aa,mz,.5);
-   if(p1&&p2&&p3&&p4)poly([p1,p2,p3,p4],shade(h.wall,-30));
+   const p1=hp(aa,mz,0),p2=hp(bb,mz,0),p3=hp(bb,mz,.5),p4=hp(aa,mz,.5);
+   poly([p1,p2,p3,p4],shade(h.wall,-30));
  }
  wallSeg(x1-.28,h.x-1.08);
  wallSeg(h.x+1.08,x2+.28);
