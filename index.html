@@ -80,57 +80,88 @@ function ground(){
    muro frontal e pequeno jardim. Nada de fachada solta. */
 function house(h){
  const x1=h.x-h.w/2,x2=h.x+h.w/2,z1=h.z-h.d/2,z2=h.z+h.d/2;
- const Hh=h.h, rh=Hh+.65;
- const p00=proj(x1,z1,0),p10=proj(x2,z1,0),p11=proj(x2,z2,0),p01=proj(x1,z2,0);
- const t00=proj(x1,z1,Hh),t10=proj(x2,z1,Hh),t11=proj(x2,z2,Hh),t01=proj(x1,z2,Hh);
- const rf=proj(h.x,z1,rh),rb=proj(h.x,z2,rh);
- if(!p00||!p10||!p11||!p01||!t00||!t10||!t11||!t01||!rf||!rb)return;
- poly([p00,p10,t10,t00],h.wall);
- poly([p10,p11,t11,t10],h.side);
- poly([p11,p01,t01,t11],shade(h.side,-12));
- poly([p01,p00,t00,t01],shade(h.wall,-18));
- poly([t00,t10,rf],shade(h.wall,-8));
- poly([t10,t11,rb,rf],h.roof);
- poly([t11,t01,rb],shade(h.roof,-15));
- poly([t01,t00,rf,rb],shade(h.roof,-6));
- const b0=proj(x1-.08,z1-.10,Hh+.03),b1=proj(x2+.08,z1-.10,Hh+.03);
- const b2=proj(x2+.08,z1-.10,Hh-.08),b3=proj(x1-.08,z1-.10,Hh-.08);
- poly([b0,b1,b2,b3],shade(h.roof,-18));
- function rectAt(x,z,y,w,hgt,fill,stroke){
-   const q=proj(x,z-.035,y); if(!q)return;
-   const ww=q.s*w,hh=q.s*hgt;
-   ctx.fillStyle=fill;ctx.fillRect(q.x-ww/2,q.y-hh/2,ww,hh);
-   if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=Math.max(1,q.s*.012);ctx.strokeRect(q.x-ww/2,q.y-hh/2,ww,hh);}
+ const Hh=h.h, roofH=Hh+.72;
+
+ const v=[
+   proj(x1,z1,0),proj(x2,z1,0),proj(x2,z2,0),proj(x1,z2,0),
+   proj(x1,z1,Hh),proj(x2,z1,Hh),proj(x2,z2,Hh),proj(x1,z2,Hh),
+   proj(h.x,z1,roofH),proj(h.x,z2,roofH)
+ ];
+ if(v.some(p=>!p))return;
+
+ const [a,b,c0,d,a1,b1,c1,d1,rf,rb]=v;
+ const q=cam(h.x,h.z);
+
+ // Cada parede é uma face sólida. A ordem muda conforme o lado de onde a câmera vê a casa,
+ // evitando que as faces se atravessem visualmente.
+ const frontVisible = q.f>0;
+ const rightVisible = q.s<0;
+
+ // Parte traseira primeiro.
+ if(frontVisible){
+   if(rightVisible) poly([b,c0,c1,b1],h.side);
+   else poly([d,a,a1,d1],shade(h.side,-16));
+   poly([c0,d,c1,d1],shade(h.side,-22));
+   poly([a,b,b1,a1],h.wall);
+ }else{
+   if(rightVisible) poly([b,c0,c1,b1],h.side);
+   else poly([d,a,a1,d1],shade(h.side,-16));
+   poly([a,b,c0,d],shade(h.side,-25));
+   poly([a,b,b1,a1],h.wall);
  }
- rectAt(h.x-.65,z1,1.15,.72,1.55,h.door,"#392b25");
- rectAt(h.x+.72,z1,1.95,1.05,.72,h.win,"#536b70");
- rectAt(h.x-.70,z1,2.0,.72,.65,h.win,"#536b70");
- for(const off of [-.70,.72]){
-   const q=proj(h.x+off,z1-.04,1.98);
-   if(!q)continue;
-   const ww=q.s*(off<0?.72:1.05),hh=q.s*(off<0?.65:.72);
-   line([{x:q.x,y:q.y-hh/2},{x:q.x,y:q.y+hh/2}], "#65777a",Math.max(1,q.s*.008));
-   line([{x:q.x-ww/2,y:q.y},{x:q.x+ww/2,y:q.y}], "#65777a",Math.max(1,q.s*.008));
+
+ // Telhado: quatro faces simples, sempre opacas.
+ if(frontVisible){
+   poly([a1,b1,rf],shade(h.wall,-8));
+   poly([b1,c1,rb,rf],h.roof);
+   poly([c1,d1,rb],shade(h.roof,-14));
+ }else{
+   poly([a1,b1,rf],shade(h.wall,-12));
+   poly([d1,c1,rb],h.roof);
+   poly([a1,d1,rb,rf],shade(h.roof,-8));
  }
- const g=proj(h.x+1.65,z1-.045,.82);
- if(g){
-   const gw=g.s*.85,gh=g.s*.82;
-   ctx.fillStyle=h.gate||"#5a514a";
-   ctx.fillRect(g.x-gw/2,g.y-gh/2,gw,gh);
-   ctx.strokeStyle="#393735";ctx.lineWidth=Math.max(1,g.s*.01);
-   ctx.strokeRect(g.x-gw/2,g.y-gh/2,gw,gh);
-   for(let i=1;i<4;i++){
-     const xx=g.x-gw/2+gw*i/4;
-     line([{x:xx,y:g.y-gh/2},{x:xx,y:g.y+gh/2}],"#81796f",Math.max(1,g.s*.006));
-   }
+
+ // Só coloca detalhes na fachada que está voltada para a câmera.
+ const facadeZ = frontVisible ? z1-.018 : z2+.018;
+ const facadeSign = frontVisible ? -1 : 1;
+
+ function panel(cx,cy,w,hgt,fill,border){
+   const p1=proj(cx-w/2,facadeZ,cy-hgt/2);
+   const p2=proj(cx+w/2,facadeZ,cy-hgt/2);
+   const p3=proj(cx+w/2,facadeZ,cy+hgt/2);
+   const p4=proj(cx-w/2,facadeZ,cy+hgt/2);
+   if(!p1||!p2||!p3||!p4)return;
+   poly([p1,p2,p3,p4],fill);
+   if(border)line([p1,p2,p3,p4,p1],border,Math.max(1,p1.s*.012));
+   return {p1,p2,p3,p4};
  }
- const mz=z1-.62,mh=.52;
- function wallSeg(a,b){
-   const q1=proj(a,mz,0),q2=proj(b,mz,0),q3=proj(b,mz,mh),q4=proj(a,mz,mh);
-   poly([q1,q2,q3,q4],shade(h.wall,-28));
+
+ const doorX=h.x-.65;
+ panel(doorX,1.0,.82,1.75,h.door,"#3a2a24");
+ const win1=panel(h.x+.72,1.95,1.15,.78,h.win,"#f0e6d5");
+ const win2=panel(h.x-.68,2.02,.82,.68,h.win,"#f0e6d5");
+
+ function cross(w){
+   if(!w)return;
+   const mx=(w.p1.x+w.p2.x)/2,my=(w.p1.y+w.p3.y)/2;
+   line([{x:mx,y:w.p1.y},{x:mx,y:w.p3.y}],"#5b6d70",Math.max(1,w.p1.s*.008));
+   line([{x:w.p1.x,y:my},{x:w.p2.x,y:my}],"#5b6d70",Math.max(1,w.p1.s*.008));
  }
- wallSeg(x1-.35,h.x-.95);
- wallSeg(h.x+.95,x2+.35);
+ cross(win1);cross(win2);
+
+ // Portão baixo alinhado com a mesma fachada, sem flutuar na frente.
+ if(h.style===0||h.style===3){
+   panel(h.x+1.55,.75,.95,1.05,h.gate||"#5a514a","#393735");
+ }
+
+ // Muro frontal baixo, dividido para manter a entrada livre.
+ const mz=frontVisible?z1-.58:z2+.58;
+ function wallSeg(aa,bb){
+   const p1=proj(aa,mz,0),p2=proj(bb,mz,0),p3=proj(bb,mz,.55),p4=proj(aa,mz,.55);
+   poly([p1,p2,p3,p4],shade(h.wall,-28));
+ }
+ wallSeg(x1-.35,h.x-.98);
+ wallSeg(h.x+.98,x2+.35);
 }
 function tree(x,z){
  let b=proj(x,z,0),t=proj(x,z,2.9);if(!b||!t)return;
