@@ -285,8 +285,9 @@ function npc(n){
  line([rShoulder,rElbow,rHand],"#d39a78",Math.max(2,s*.032));
 
  // Pescoço curto e cabeça centralizada sobre o tronco.
- const neck=proj(n.x,n.z,1.48);
- line([neck,head],"#d39a78",Math.max(2,s*.055));
+ const neck=proj(n.x,n.z,1.40);
+ // Pescoço curto e parcialmente escondido dentro do tronco.
+ line([neck,head],"#d39a78",Math.max(2,s*.045));
  ctx.fillStyle="#d39a78";
  ctx.beginPath();ctx.arc(head.x,head.y,Math.max(4,s*.145),0,Math.PI*2);ctx.fill();
 }
