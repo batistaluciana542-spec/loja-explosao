@@ -52,8 +52,8 @@ function line(points,stroke,width=1){if(points.some(p=>!p))return;ctx.strokeStyl
 function ground(){
  ctx.fillStyle="#9bd0ea";ctx.fillRect(0,0,W,H);
  const horizon=Math.max(0,Math.min(H,H*.53+Math.sin(C.pitch)*Math.min(W,H)*.92));
- // O fundo abaixo do horizonte usa a mesma cor da calçada/grama apenas nas áreas
- // fora da malha. Mantemos a faixa inferior coberta pela superfície da rua.
+ // Base neutra. O piso inteiro será coberto pelas superfícies projetadas,
+ // evitando que o gramado apareça como um buraco aos pés da câmera.
  ctx.fillStyle="#55575a";ctx.fillRect(0,horizon,W,H-horizon);
 
  const strips=[[-5.4,-3.65,"#c5beb2"],[-3.65,3.65,"#55575a"],[3.65,5.4,"#c5beb2"]];
@@ -61,16 +61,12 @@ function ground(){
  // Preenche a área imediatamente sob a câmera. A projeção ignora pontos
  // quase colados ao jogador, então sem esta faixa aparecia o gramado verde
  // exatamente aos pés do jogador.
- for(const [l,r,col] of strips){
-   const z0=C.z+.38,z1=C.z+2.4;
-   const a=proj(l,z0),b=proj(r,z0),c1=proj(r,z1),d=proj(l,z1);
-   if(a&&b&&c1&&d)poly([a,b,c1,d],col);
- }
+
 
  // O chão existe para os dois lados da posição do jogador, mas cada
  // trecho só é desenhado quando está na frente da câmera. Assim não há
  // duplicação nem sobreposição quando o jogador olha para trás.
- for(let z=-100;z<270;z+=2.2){
+ for(let z=C.z-.5;z<C.z+270;z+=2.2){
    for(const [l,r,col] of strips){
      const a=proj(l,z),b=proj(r,z),c1=proj(r,z+2.2),d=proj(l,z+2.2);
      if(a&&b&&c1&&d)poly([a,b,c1,d],col);
