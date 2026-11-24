@@ -29,12 +29,14 @@ const loading=document.getElementById('loading'),err=document.getElementById('er
 function fail(e){loading.style.display='none';err.style.display='block';err.textContent='ERRO DO MOTOR 3D:\n'+(e&&e.stack||e)}
 function loadThree(urls,i){
   if(window.THREE){start();return}
-  if(i>=urls.length){fail('Three.js não carregou.\nVerifique a internet ou bloqueio de CDN.');return}
+  if(i>=urls.length){fail('Three.js não pôde ser baixado.\nA versão atual precisa de um arquivo local do Three.js para funcionar sem CDN.');return}
   const s=document.createElement('script');
   s.src=urls[i];
-  s.onload=()=>window.THREE?start():loadThree(urls,i+1);
+  s.async=false;
+  s.onload=()=>{ if(window.THREE) start(); else loadThree(urls,i+1); };
   s.onerror=()=>loadThree(urls,i+1);
   document.head.appendChild(s);
+  setTimeout(()=>{if(!window.THREE) {try{s.remove()}catch(e){} loadThree(urls,i+1)}},7000);
 }
 function start(){
 try{
@@ -94,7 +96,7 @@ const speed=5*dt;const forward=new THREE.Vector3(0,0,-1).applyAxisAngle(new THRE
 camera.position.addScaledVector(forward,-jy*speed);camera.position.addScaledVector(right,jx*speed);
 camera.position.y=1.7;renderer.render(scene,camera);requestAnimationFrame(loop)}
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight,false)});
-setTimeout(()=>{loading.style.display='none'},150);requestAnimationFrame(loop);
+requestAnimationFrame(loop);
 }catch(e){fail(e)}
 loadThree([
 'https://raw.githubusercontent.com/mrdoob/three.js/r181/build/three.min.js',
