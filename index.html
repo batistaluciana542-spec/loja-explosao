@@ -80,94 +80,75 @@ function ground(){
    muro frontal e pequeno jardim. Nada de fachada solta. */
 function house(h){
  const x1=h.x-h.w/2,x2=h.x+h.w/2,z1=h.z-h.d/2,z2=h.z+h.d/2;
- const wallH=h.h, roofH=h.h+.82;
+ const Hh=h.h, rh=Hh+.65;
 
- const A=proj(x1,z1,0),B=proj(x2,z1,0),C0=proj(x2,z2,0),D0=proj(x1,z2,0);
- const A1=proj(x1,z1,wallH),B1=proj(x2,z1,wallH),C1=proj(x2,z2,wallH),D1=proj(x1,z2,wallH);
- const RF=proj(h.x,z1,roofH),RB=proj(h.x,z2,roofH);
- if(!A||!B||!C0||!D0||!A1||!B1||!C1||!D1||!RF||!RB)return;
+ // Todas as faces são calculadas como quadriláteros independentes.
+ // Não há polígonos de "telhado" atravessando a casa.
+ const p00=proj(x1,z1,0),p10=proj(x2,z1,0),p11=proj(x2,z2,0),p01=proj(x1,z2,0);
+ const t00=proj(x1,z1,Hh),t10=proj(x2,z1,Hh),t11=proj(x2,z2,Hh),t01=proj(x1,z2,Hh);
+ const rf=proj(h.x,z1,rh),rb=proj(h.x,z2,rh);
+ if(!p00||!p10||!p11||!p01||!t00||!t10||!t11||!t01||!rf||!rb)return;
 
- // Corpo principal: volume fechado e simples, parecido com casas térreas de rua residencial.
- poly([A,B,B1,A1],h.wall);
- poly([B,C0,C1,B1],h.side);
- poly([C0,D0,D1,C1],shade(h.side,-14));
- poly([D0,A,A1,D1],shade(h.wall,-22));
+ // Caixa principal fechada.
+ poly([p00,p10,t10,t00],h.wall);
+ poly([p10,p11,t11,t10],h.side);
+ poly([p11,p01,t01,t11],shade(h.side,-12));
+ poly([p01,p00,t00,t01],shade(h.wall,-18));
 
- // Faixa superior e beiral para quebrar o aspecto de caixa.
- const e1=proj(x1-.08,z1-.12,wallH+.10),e2=proj(x2+.08,z1-.12,wallH+.10);
- const e3=proj(x2+.08,z1-.12,wallH-.12),e4=proj(x1-.08,z1-.12,wallH-.12);
- poly([e1,e2,e3,e4],h.trim);
+ // Frontão e fundo do telhado. Só três faces, sem cruzamentos.
+ poly([t00,t10,rf],shade(h.wall,-8));
+ poly([t10,t11,rb,rf],h.roof);
+ poly([t11,t01,rb],shade(h.roof,-15));
+ poly([t01,t00,rf,rb],shade(h.roof,-6));
 
- // Telhado inclinado com cumeeira central.
- poly([A1,B1,RF],h.roof);
- poly([B1,C1,RB,RF],shade(h.roof,-10));
- poly([C1,D1,RB],shade(h.roof,-18));
- poly([D1,A1,RF,RB],shade(h.roof,-7));
+ // Beiral frontal fino.
+ const b0=proj(x1-.08,z1-.10,Hh+.03),b1=proj(x2+.08,z1-.10,Hh+.03);
+ const b2=proj(x2+.08,z1-.10,Hh-.08),b3=proj(x1-.08,z1-.10,Hh-.08);
+ poly([b0,b1,b2,b3],shade(h.roof,-18));
 
- // Frontão triangular visível acima da fachada.
- poly([A1,B1,RF],shade(h.wall,-8));
+ // Elementos da fachada são desenhados como retângulos de tela,
+ // presos ao plano frontal e sem alterar a geometria da casa.
+ function rectAt(x,z,y,w,hgt,fill,stroke){
+   const q=proj(x,z-.035,y); if(!q)return;
+   const ww=q.s*w,hh=q.s*hgt;
+   ctx.fillStyle=fill;ctx.fillRect(q.x-ww/2,q.y-hh/2,ww,hh);
+   if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=Math.max(1,q.s*.012);ctx.strokeRect(q.x-ww/2,q.y-hh/2,ww,hh);}
+ }
+ rectAt(h.x-.65,z1,1.15,.72,1.55,h.door,"#392b25");
+ rectAt(h.x+.72,z1,1.95,1.05,.72,h.win,"#536b70");
+ rectAt(h.x-.70,z1,2.0,.72,.65,h.win,"#536b70");
 
- // Porta + pequeno alpendre/recuo visual.
- const door=proj(h.x-.55,z1-.035,1.18);
- if(door){
-   const dw=door.s*.19,dh=door.s*.53;
-   ctx.fillStyle=h.door;ctx.fillRect(door.x-dw/2,door.y-dh/2,dw,dh);
-   ctx.strokeStyle=shade(h.door,-25);ctx.lineWidth=Math.max(1,door.s*.018);ctx.strokeRect(door.x-dw/2,door.y-dh/2,dw,dh);
-   ctx.fillStyle="#c9a75e";ctx.beginPath();ctx.arc(door.x+dw*.28,door.y,Math.max(1.5,door.s*.012),0,Math.PI*2);ctx.fill();
-   const aw=dw*1.35,ah=door.s*.035;
-   ctx.fillStyle=shade(h.trim,-18);ctx.fillRect(door.x-aw/2,door.y-dh/2-ah*2,aw,ah);
+ // Divisões das janelas.
+ for(const off of [-.70,.72]){
+   const q=proj(h.x+off,z1-.04,1.98);
+   if(!q)continue;
+   const ww=q.s*(off<0?.72:1.05),hh=q.s*(off<0?.65:.72);
+   line([{x:q.x,y:q.y-hh/2},{x:q.x,y:q.y+hh/2}], "#65777a",Math.max(1,q.s*.008));
+   line([{x:q.x-ww/2,y:q.y},{x:q.x+ww/2,y:q.y}], "#65777a",Math.max(1,q.s*.008));
  }
 
- // Janela grande de sala.
- const q1=proj(h.x+.72,z1-.04,1.95);
- if(q1){
-   const ww=q1.s*.24,hh=q1.s*.18;
-   ctx.fillStyle=h.trim;ctx.fillRect(q1.x-ww/2-ww*.08,q1.y-hh/2-hh*.08,ww*1.16,hh*1.16);
-   ctx.fillStyle=h.win;ctx.fillRect(q1.x-ww/2,q1.y-hh/2,ww,hh);
-   ctx.strokeStyle="#596b6d";ctx.lineWidth=Math.max(1,q1.s*.014);
-   ctx.strokeRect(q1.x-ww/2,q1.y-hh/2,ww,hh);
-   line([{x:q1.x,y:q1.y-hh/2},{x:q1.x,y:q1.y+hh/2}], "#617376",Math.max(1,q1.s*.009));
-   line([{x:q1.x-ww/2,y:q1.y},{x:q1.x+ww/2,y:q1.y}], "#617376",Math.max(1,q1.s*.009));
- }
-
- // Segunda janela menor. O estilo muda de uma casa para outra.
- const q2=proj(h.x-(h.w*.27),z1-.045,2.05);
- if(q2){
-   const ww=q2.s*(h.style===2?.19:.16),hh=q2.s*.15;
-   ctx.fillStyle=h.trim;ctx.fillRect(q2.x-ww/2-ww*.07,q2.y-hh/2-hh*.07,ww*1.14,hh*1.14);
-   ctx.fillStyle=h.win;ctx.fillRect(q2.x-ww/2,q2.y-hh/2,ww,hh);
-   ctx.strokeStyle="#596b6d";ctx.lineWidth=Math.max(1,q2.s*.012);ctx.strokeRect(q2.x-ww/2,q2.y-hh/2,ww,hh);
-   line([{x:q2.x,y:q2.y-hh/2},{x:q2.x,y:q2.y+hh/2}], "#617376",Math.max(1,q2.s*.009));
- }
-
- // Garagem/portão em algumas casas, sem criar um bloco separado.
- if(h.style===0||h.style===3){
-   const g=proj(h.x+.35,z1-.055,.92);
-   if(g){
-     const gw=g.s*.31,gh=g.s*.42;
-     ctx.fillStyle=h.gate;ctx.fillRect(g.x-gw/2,g.y-gh/2,gw,gh);
-     ctx.strokeStyle=shade(h.gate,-25);ctx.lineWidth=Math.max(1,g.s*.012);ctx.strokeRect(g.x-gw/2,g.y-gh/2,gw,gh);
-     for(let i=1;i<4;i++)line([{x:g.x-gw/2+gw*i/4,y:g.y-gh/2},{x:g.x-gw/2+gw*i/4,y:g.y+gh/2}],shade(h.gate,18),Math.max(1,g.s*.007));
+ // Portão baixo separado da parede, apenas na frente.
+ const g=proj(h.x+1.65,z1-.045,.82);
+ if(g){
+   const gw=g.s*.85,gh=g.s*.82;
+   ctx.fillStyle=h.gate||"#5a514a";
+   ctx.fillRect(g.x-gw/2,g.y-gh/2,gw,gh);
+   ctx.strokeStyle="#393735";ctx.lineWidth=Math.max(1,g.s*.01);
+   ctx.strokeRect(g.x-gw/2,g.y-gh/2,gw,gh);
+   for(let i=1;i<4;i++){
+     const xx=g.x-gw/2+gw*i/4;
+     line([{x:xx,y:g.y-gh/2},{x:xx,y:g.y+gh/2}],"#81796f",Math.max(1,g.s*.006));
    }
  }
 
- // Muro baixo frontal com abertura central. Isso aproxima a fachada de uma casa real,
- // sem transformar a casa em uma caixa flutuante.
- const mz=z1-.62;
- const mh=.58;
- const leftEnd=h.x-.95,rightStart=h.x+.95;
- const m1=proj(x1-.48,mz,0),m2=proj(leftEnd,mz,0),m3=proj(leftEnd,mz,mh),m4=proj(x1-.48,mz,mh);
- const n1=proj(rightStart,mz,0),n2=proj(x2+.48,mz,0),n3=proj(x2+.48,mz,mh),n4=proj(rightStart,mz,mh);
- poly([m1,m2,m3,m4],shade(h.wall,-25));
- poly([n1,n2,n3,n4],shade(h.wall,-25));
-
- // Pequenas colunas no portão.
- for(const px of [leftEnd,rightStart]){
-   const p0=proj(px,mz,0),p1=proj(px,mz,.9);
-   if(p0&&p1){
-     ctx.strokeStyle=shade(h.wall,-35);ctx.lineWidth=Math.max(2,p0.s*.035);ctx.beginPath();ctx.moveTo(p0.x,p0.y);ctx.lineTo(p1.x,p1.y);ctx.stroke();
-   }
+ // Muro frontal em duas partes, com abertura central.
+ const mz=z1-.62,mh=.52;
+ function wallSeg(a,b){
+   const q1=proj(a,mz,0),q2=proj(b,mz,0),q3=proj(b,mz,mh),q4=proj(a,mz,mh);
+   poly([q1,q2,q3,q4],shade(h.wall,-28));
  }
+ wallSeg(x1-.35,h.x-.95);
+ wallSeg(h.x+.95,x2+.35);
 }
 function tree(x,z){
  let b=proj(x,z,0),t=proj(x,z,2.9);if(!b||!t)return;
