@@ -3,165 +3,82 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>NEON FRONTIER 3D</title>
+<title>NEON FRONTIER</title>
 <style>
-*{box-sizing:border-box}html,body{margin:0;height:100%;overflow:hidden;background:#050812;color:#fff;font-family:Arial,sans-serif}#game{position:fixed;inset:0}
-#menu{position:fixed;inset:0;z-index:20;display:grid;place-items:center;background:radial-gradient(circle at 50% 35%,#173b67,#070a15 58%,#020309);text-align:center}
-.panel{width:min(92vw,620px);padding:34px;border:1px solid #5cecff55;border-radius:28px;background:#07101eee;box-shadow:0 0 90px #00d9ff18, inset 0 0 50px #182d5222}
-.logo{font-size:clamp(38px,9vw,72px);font-weight:900;letter-spacing:7px;color:#8df9ff;text-shadow:0 0 12px #00eaff,0 0 45px #007bff}
-.sub{color:#a7bad8;letter-spacing:4px;font-size:12px;margin:4px 0 25px}.desc{color:#8195b7;font-size:13px;line-height:1.5;margin:18px}
-input,button{font:inherit;border:1px solid #55eaff55;border-radius:12px;background:#0b1830;color:#fff;padding:13px}input{width:100%;outline:none}button{cursor:pointer;font-weight:800}button:hover{background:#142b4d;border-color:#6ff5ff}.main{width:100%;margin-top:10px;background:linear-gradient(135deg,#006f88,#6332a0)}.row{display:flex;gap:8px;margin-top:8px}.row button{flex:1}
-#hud{display:none;position:fixed;inset:0;z-index:5;pointer-events:none}.box{position:absolute;pointer-events:auto;background:#06101dcc;border:1px solid #5eeeff44;border-radius:14px;padding:10px;backdrop-filter:blur(8px);box-shadow:0 8px 30px #0006}
-#stats{left:12px;top:12px;min-width:230px}.bar{height:8px;background:#18243a;border-radius:8px;overflow:hidden;margin:5px 0}.hp{height:100%;background:linear-gradient(90deg,#ff3f71,#ff9b58)}.xp{height:100%;background:#3beaff}
-#mission{right:12px;top:12px;width:260px}.title{font-size:11px;color:#74efff;letter-spacing:2px}
-#chat{left:12px;bottom:12px;width:min(380px,calc(100% - 24px));height:150px}.msgs{height:94px;overflow:auto;font-size:12px;color:#cbd9ef}.chatin{width:calc(100% - 52px);padding:8px;font-size:12px}.send{padding:8px;width:45px}
-#hint{position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);color:#fff8;font-size:12px;text-shadow:0 2px 5px #000;pointer-events:none}
-#cross{position:absolute;left:50%;top:50%;width:20px;height:20px;transform:translate(-50%,-50%);pointer-events:none}.cross:before,.cross:after{content:"";position:absolute;background:#fff;box-shadow:0 0 5px #5ff}.cross:before{width:2px;height:20px;left:9px}.cross:after{height:2px;width:20px;top:9px}
-#actions{right:12px;bottom:12px;display:flex;gap:6px;flex-wrap:wrap;max-width:360px}.action{padding:9px 12px;font-size:12px}
-#inv{display:none;right:12px;bottom:70px;width:270px}.slot{display:inline-block;width:56px;height:56px;margin:3px;padding:8px;border:1px solid #4eeaff44;border-radius:10px;background:#0a1830;text-align:center;font-size:11px}
-#mobile{display:none;position:fixed;inset:0;z-index:8;pointer-events:none}.stick{position:absolute;left:20px;bottom:25px;width:150px;height:150px;border-radius:50%;background:#ffffff10;border:1px solid #ffffff18;pointer-events:auto}.stick button{position:absolute;width:48px;height:48px;padding:0;background:#0b173d99}.u{left:51px;top:5px}.d{left:51px;bottom:5px}.l{left:5px;top:51px}.r{right:5px;top:51px}.fire{position:absolute;right:24px;bottom:45px;width:78px;height:78px;border-radius:50%;background:#63285ecc;border-color:#ff75d855;pointer-events:auto}.mine{position:absolute;right:115px;bottom:62px;width:58px;height:58px;border-radius:50%;pointer-events:auto}
-#room{position:fixed;z-index:21;left:50%;top:14px;transform:translateX(-50%);display:none;padding:7px 13px;border-radius:12px;background:#06101ddd;border:1px solid #55eaff44;font-size:12px}
-@media(max-width:700px){#mobile{display:block}#actions{display:none}#mission{width:190px;font-size:12px}.panel{padding:24px}.desc{font-size:12px}#chat{height:125px;width:250px}.msgs{height:68px}}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#08111d;color:white;font-family:Arial,sans-serif}
+#game{position:fixed;inset:0;width:100%;height:100%;touch-action:none}
+#menu{position:fixed;inset:0;z-index:5;display:grid;place-items:center;background:radial-gradient(circle at 50% 35%,#174a78,#070b16 62%,#020308)}
+.panel{width:min(92vw,560px);padding:30px;border:1px solid #4eeaff66;border-radius:26px;background:#07111eee;box-shadow:0 0 70px #00d9ff25;text-align:center}
+.logo{font-size:clamp(42px,10vw,72px);font-weight:900;letter-spacing:7px;color:#9cffff;text-shadow:0 0 12px #00eaff,0 0 45px #007bff}
+.sub{font-size:11px;letter-spacing:4px;color:#9eb5d5;margin:5px 0 24px}
+input,button{border:1px solid #55eaff66;border-radius:12px;background:#0b1930;color:white;padding:13px;font:inherit}input{width:100%;outline:0}button{cursor:pointer;font-weight:800}.main{width:100%;margin-top:10px;background:linear-gradient(135deg,#007d9b,#6736a5)}.row{display:flex;gap:8px;margin-top:8px}.row button{flex:1}
+.desc{font-size:12px;line-height:1.55;color:#8499b9;margin-top:18px}
+#hud{display:none;position:fixed;inset:0;z-index:3;pointer-events:none}.box{position:absolute;background:#06101dcc;border:1px solid #5eeeff44;border-radius:13px;padding:10px;backdrop-filter:blur(7px);pointer-events:auto}
+#stats{left:10px;top:10px;min-width:220px}.bar{height:8px;background:#18243a;border-radius:8px;margin:5px 0;overflow:hidden}.hp{height:100%;background:#ff5577}.xp{height:100%;background:#42eaff}
+#mission{right:10px;top:10px;width:245px;font-size:12px}.title{font-size:10px;color:#6eefff;letter-spacing:2px}
+#chat{left:10px;bottom:10px;width:310px;height:135px}.msgs{height:80px;overflow:auto;font-size:12px}.chatin{width:calc(100% - 48px);padding:8px;font-size:12px}.send{width:42px;padding:8px}
+#actions{right:10px;bottom:10px;display:flex;gap:6px;flex-wrap:wrap;max-width:350px}.action{padding:9px;font-size:12px}
+#inv{display:none;right:10px;bottom:65px;width:260px}.slot{display:inline-block;width:58px;height:54px;margin:3px;padding:7px;border:1px solid #4eeaff44;border-radius:9px;text-align:center;font-size:10px;background:#0a1830}
+#cross{position:fixed;left:50%;top:50%;width:20px;height:20px;transform:translate(-50%,-50%);z-index:4;pointer-events:none}.cross:before,.cross:after{content:"";position:absolute;background:white;box-shadow:0 0 6px #5ff}.cross:before{left:9px;width:2px;height:20px}.cross:after{top:9px;height:2px;width:20px}
+#mobile{display:none;position:fixed;inset:0;z-index:4;pointer-events:none}.pad{position:absolute;left:18px;bottom:18px;width:145px;height:145px;border-radius:50%;background:#ffffff0d;border:1px solid #ffffff22;pointer-events:auto}.pad button{position:absolute;width:45px;height:45px;padding:0;background:#0a193dcc}.u{left:50px;top:4px}.d{left:50px;bottom:4px}.l{left:4px;top:50px}.r{right:4px;top:50px}.mine{position:absolute;right:25px;bottom:35px;width:70px;height:70px;border-radius:50%;pointer-events:auto;background:#7435aacc}
+@media(max-width:700px){#mobile{display:block}#actions{display:none}#mission{width:180px}.panel{padding:22px}#chat{width:250px;height:120px}.msgs{height:65px}}
 </style>
 </head>
 <body>
-<div id="game"></div>
+<canvas id="game"></canvas>
 <div id="menu"><div class="panel">
-<div class="logo">NEON<br>FRONTIER</div><div class="sub">3D OPEN WORLD • MULTIPLAYER</div>
+<div class="logo">NEON<br>FRONTIER</div><div class="sub">VOXEL WORLD • MULTIPLAYER</div>
 <input id="name" maxlength="16" placeholder="Nome do explorador">
-<button class="main" id="play">ENTRAR NO MUNDO 3D</button>
+<button class="main" id="play">ENTRAR NO MUNDO</button>
 <div class="row"><button id="create">CRIAR SALA</button><button id="join">ENTRAR EM SALA</button></div>
-<div class="desc">Explore um mundo de blocos em 3D, corte árvores, extraia minérios, descubra cristais e construa seu próprio abrigo. O multiplayer usa conexão direta entre jogadores.</div>
+<div class="desc">Explore, mine blocos, colete cristais, suba de nível e construa. O mundo roda direto no navegador, sem depender de biblioteca externa para iniciar.</div>
 </div></div>
-<div id="room"></div>
 <div id="hud">
 <div id="stats" class="box"><b id="pname">EXPLORADOR</b><div>Nível <span id="level">1</span> • XP <span id="xptext">0</span>/100</div><div class="bar"><div id="hpbar" class="hp" style="width:100%"></div></div><small>HP <span id="hptext">100</span>/100 • 💰 <span id="money">25</span></small></div>
-<div id="mission" class="box"><div class="title">MISSÃO</div><b>O PRIMEIRO CRISTAL</b><div id="quest">Encontre um cristal azul no mundo.</div><small id="qprog">0 / 1</small></div>
-<div id="chat" class="box"><div id="msgs" class="msgs"></div><input id="chatin" class="chatin" maxlength="70" placeholder="Mensagem..."><button id="send" class="send">➤</button></div>
-<div id="actions" class="box"><button class="action" id="mine">⛏ MINERAR</button><button class="action" id="build">🧱 BLOCO</button><button class="action" id="bag">🎒 INVENTÁRIO</button><button class="action" id="save">💾 SALVAR</button></div>
+<div id="mission" class="box"><div class="title">MISSÃO</div><b>O PRIMEIRO CRISTAL</b><div id="quest">Encontre um cristal azul.</div><small id="qprog">0 / 1</small></div>
+<div id="chat" class="box"><div id="msgs" class="msgs"></div><input id="chatin" class="chatin" maxlength="70" placeholder="Mensagem"><button id="send" class="send">➤</button></div>
+<div id="actions" class="box"><button class="action" id="mine">⛏ MINERAR</button><button class="action" id="build">🧱 CONSTRUIR</button><button class="action" id="bag">🎒 INVENTÁRIO</button><button class="action" id="save">💾 SALVAR</button></div>
 <div id="inv" class="box"><b>INVENTÁRIO</b><div id="slots"></div></div>
-<div id="cross" class="cross"></div><div id="hint">Clique na tela para capturar a câmera • WASD move • mouse olha • clique quebra bloco</div>
-</div>
-<div id="mobile"><div class="stick"><button class="u" data-k="w">▲</button><button class="d" data-k="s">▼</button><button class="l" data-k="a">◀</button><button class="r" data-k="d">▶</button></div><button class="mine" id="mmine">⛏</button><button class="fire" id="mfire">⚡</button></div>
+</div><div id="cross" class="cross"></div>
+<div id="mobile"><div class="pad"><button class="u" data-k="w">▲</button><button class="d" data-k="s">▼</button><button class="l" data-k="a">◀</button><button class="r" data-k="d">▶</button></div><button class="mine" id="mmine">⛏</button></div>
 
-<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
-<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
-const root=document.getElementById('game');
-const scene=new THREE.Scene();
-scene.background=new THREE.Color(0x8fd7ff);
-scene.fog=new THREE.Fog(0x8fd7ff,35,115);
-const camera=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,.05,180);
-camera.position.set(0,4,8);
-const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
-renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;root.appendChild(renderer.domElement);
-scene.add(new THREE.HemisphereLight(0xbfe9ff,0x24351d,1.8));
-const sun=new THREE.DirectionalLight(0xfff2cf,2.2);sun.position.set(-35,55,20);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);scene.add(sun);
+(function(){
+"use strict";
+const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");
+let W=innerWidth,H=innerHeight,D=devicePixelRatio||1;
+function resize(){W=innerWidth;H=innerHeight;canvas.width=W*D;canvas.height=H*D;canvas.style.width=W+"px";canvas.style.height=H+"px";ctx.setTransform(D,0,0,D,0,0)}addEventListener("resize",resize);resize();
 
-const mats={
-grass:new THREE.MeshStandardMaterial({color:0x4d9b52,roughness:.95}),
-grassTop:new THREE.MeshStandardMaterial({color:0x69bd55,roughness:1}),
-dirt:new THREE.MeshStandardMaterial({color:0x795034,roughness:1}),
-stone:new THREE.MeshStandardMaterial({color:0x737b87,roughness:.9}),
-sand:new THREE.MeshStandardMaterial({color:0xd7c17c,roughness:1}),
-wood:new THREE.MeshStandardMaterial({color:0x80552f,roughness:.95}),
-leaf:new THREE.MeshStandardMaterial({color:0x24683e,roughness:1}),
-crystal:new THREE.MeshStandardMaterial({color:0x3fe7ff,emissive:0x087dff,emissiveIntensity:1.8,roughness:.2}),
-water:new THREE.MeshStandardMaterial({color:0x258fd0,transparent:true,opacity:.62,roughness:.15,metalness:.05}),
-glow:new THREE.MeshStandardMaterial({color:0x9b5cff,emissive:0x7b28ff,emissiveIntensity:2}),
-player:new THREE.MeshStandardMaterial({color:0x4ceaff,roughness:.45}),
-};
-const seed=Math.floor(Math.random()*1000000);
-const cube=new THREE.BoxGeometry(1,1,1), blocks=[], blockMap=new Map();
-const key=(x,y,z)=>x+','+y+','+z;
-function addBlock(x,y,z,type,breakable=true){
- const m=new THREE.Mesh(cube,mats[type]||mats.stone);m.position.set(x+.5,y+.5,z+.5);m.castShadow=true;m.receiveShadow=true;m.userData={x,y,z,type,breakable};
- scene.add(m);blocks.push(m);blockMap.set(key(x,y,z),m);return m;
-}
-function removeBlock(m){blockMap.delete(key(m.userData.x,m.userData.y,m.userData.z));scene.remove(m);const i=blocks.indexOf(m);if(i>=0)blocks.splice(i,1);}
-function hash(x,z){let n=Math.sin(x*127.1+z*311.7+seed)*43758.5453;return n-Math.floor(n)}
-function heightAt(x,z){return Math.max(1,Math.floor(3+Math.sin(x*.19)*1.5+Math.cos(z*.16)*1.3+Math.sin((x+z)*.07)*2))}
-const R=34;
-for(let x=-R;x<=R;x++)for(let z=-R;z<=R;z++){
- let h=heightAt(x,z);let water=h<2;
- for(let y=0;y<=Math.max(h,2);y++){
-   let t=y===h?(water?'sand':'grass'):y>h-3?'dirt':'stone';
-   addBlock(x,y,z,t);
- }
- if(water)addBlock(x,2,z,'water',false);
- if(h>=3 && hash(x,z)>.87 && Math.hypot(x,z)>7){
-   for(let y=1;y<=3;y++)addBlock(x,h+y,z,'wood');
-   for(let dx=-2;dx<=2;dx++)for(let dz=-2;dz<=2;dz++)for(let dy=3;dy<=4;dy++)if(Math.abs(dx)+Math.abs(dz)<4)addBlock(x+dx,h+dy,z+dz,'leaf');
- }
- if(h>=4 && hash(x+3,z-2)>.94){addBlock(x,h+1,z,'crystal');addBlock(x,h+2,z,'crystal')}
-}
-const bed=new THREE.Mesh(new THREE.PlaneGeometry(240,240),new THREE.MeshStandardMaterial({color:0x172b1a,roughness:1}));
-bed.rotation.x=-Math.PI/2;bed.position.y=-.01;bed.receiveShadow=true;scene.add(bed);
-
-const player={x:0,y:7,z:8,vy:0,yaw:0,pitch:0,hp:100,level:1,xp:0,money:25,inv:{wood:0,stone:0,crystal:0,sand:0},speed:5.5};
-const remotePlayers=new Map();
-let keys={},locked=false,peer=null,connections=[],isHost=false,seedText=seed.toFixed(0);
-function makeRemote(id,data){
- const g=new THREE.Group();
- const body=new THREE.Mesh(new THREE.BoxGeometry(.7,1.25,.45),mats.player);body.position.y=.9;body.castShadow=true;
- const head=new THREE.Mesh(new THREE.BoxGeometry(.55,.55,.55),new THREE.MeshStandardMaterial({color:0xffc89a}));head.position.y=1.8;head.castShadow=true;g.add(body,head);scene.add(g);remotePlayers.set(id,g);return g;
-}
-function broadcast(data){connections.forEach(c=>{if(c&&c.open)c.send(data)})}
-function state(){return {type:'state',id:peer?peer.id:'local',name:player.name,x:player.x,y:player.y,z:player.z,yaw:player.yaw}}
-function setupConn(c){connections.push(c);c.on('data',d=>{if(d.type==='state'){let g=remotePlayers.get(d.id)||makeRemote(d.id,d);g.position.set(d.x,d.y,d.z);g.rotation.y=d.yaw}if(d.type==='chat')addMsg(d.name+': '+d.text)});c.on('close',()=>{})}
-function startPeer(create){
- peer=new Peer();
- peer.on('open',id=>{if(create){isHost=true;document.getElementById('room').textContent='SALA: '+id;document.getElementById('room').style.display='block';}else{}}); 
- peer.on('connection',c=>setupConn(c));
-}
-function joinRoom(){
- const code=prompt('Digite o código da sala:');if(!code)return;
- startPeer(false);peer.on('open',()=>{setupConn(peer.connect(code));document.getElementById('room').textContent='CONECTANDO À SALA';document.getElementById('room').style.display='block'});
-}
-function createRoom(){startPeer(true)}
-function begin(){
- player.name=document.getElementById('name').value.trim()||'Explorador';
- document.getElementById('pname').textContent=player.name;document.getElementById('menu').style.display='none';document.getElementById('hud').style.display='block';playing=true;addMsg('🌎 Você entrou no mundo 3D.');renderer.domElement.requestPointerLock?.();
-}
-function safeBegin(){try{begin()}catch(err){console.error(err);alert('O jogo encontrou um erro ao iniciar. Recarregue a página e tente novamente.')}} 
-document.getElementById('play').addEventListener('click',safeBegin);
-document.getElementById('create').addEventListener('click',()=>{try{createRoom();safeBegin()}catch(err){console.error(err);safeBegin()}});
-document.getElementById('join').addEventListener('click',()=>{try{joinRoom();safeBegin()}catch(err){console.error(err);safeBegin()}});
-addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(e.code==='Space'){e.preventDefault();mineTarget()}});
-addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
-renderer.domElement.addEventListener('click',()=>{if(playing)renderer.domElement.requestPointerLock?.()});
-document.addEventListener('mousemove',e=>{if(!playing||document.pointerLockElement!==renderer.domElement)return;player.yaw-=e.movementX*.0022;player.pitch-=e.movementY*.0022;player.pitch=Math.max(-1.45,Math.min(1.45,player.pitch))});
-document.querySelectorAll('[data-k]').forEach(b=>{b.addEventListener('touchstart',e=>{e.preventDefault();keys[b.dataset.k]=true},{passive:false});b.addEventListener('touchend',e=>{e.preventDefault();keys[b.dataset.k]=false},{passive:false})});
-document.getElementById('mmine').onclick=mineTarget;document.getElementById('mine').onclick=mineTarget;
-document.getElementById('mfire').onclick=()=>{player.hp=Math.min(100,player.hp+10);updateUI()};
-function mineTarget(){
- if(!playing)return;
- const dir=new THREE.Vector3(0,0,-1).applyEuler(new THREE.Euler(player.pitch,player.yaw,0,'YXZ'));
- const ray=new THREE.Raycaster(camera.position,dir,0,7);const hits=ray.intersectObjects(blocks);
- if(!hits.length)return;const m=hits[0].object;if(!m.userData.breakable||m.userData.type==='water')return;
- const t=m.userData.type;removeBlock(m);if(player.inv[t]!==undefined)player.inv[t]++;if(t==='crystal'){player.xp+=35;player.money+=15;document.getElementById('quest').textContent='Cristal encontrado! Explore mais.';document.getElementById('qprog').textContent='1 / 1'}else player.xp+=5;
- levelCheck();updateUI();broadcast({type:'break',x:m.userData.x,y:m.userData.y,z:m.userData.z});
-}
-function levelCheck(){if(player.xp>=player.level*100){player.xp-=player.level*100;player.level++;player.money+=30;addMsg('✨ Você subiu para o nível '+player.level+'!')}}
-function updateUI(){document.getElementById('level').textContent=player.level;document.getElementById('xptext').textContent=Math.floor(player.xp);document.getElementById('hptext').textContent=Math.floor(player.hp);document.getElementById('hpbar').style.width=player.hp+'%';document.getElementById('money').textContent=player.money;document.getElementById('slots').innerHTML=Object.entries(player.inv).map(([k,v])=>'<span class="slot">'+k+'<br><b>'+v+'</b></span>').join('')}
-function addMsg(t){const el=document.createElement('div');el.textContent=t;document.getElementById('msgs').appendChild(el);document.getElementById('msgs').scrollTop=99999}
-document.getElementById('send').onclick=sendChat;document.getElementById('chatin').addEventListener('keydown',e=>{if(e.key==='Enter')sendChat()});
-function sendChat(){const inp=document.getElementById('chatin');const text=inp.value.trim();if(!text)return;addMsg('Você: '+text);broadcast({type:'chat',name:player.name,text});inp.value=''}
-document.getElementById('bag').onclick=()=>{const i=document.getElementById('inv');i.style.display=i.style.display==='block'?'none':'block';updateUI()};
-document.getElementById('save').onclick=()=>{localStorage.setItem('neon3d',JSON.stringify({player,seed}));addMsg('💾 Progresso salvo neste aparelho.')};
-document.getElementById('build').onclick=()=>{if(player.inv.stone<1){addMsg('⛏ Você precisa de pedra.');return}const dir=new THREE.Vector3(0,0,-1).applyEuler(new THREE.Euler(player.pitch,player.yaw,0,'YXZ'));const p=camera.position.clone().add(dir.multiplyScalar(4));const bx=Math.floor(p.x),by=Math.floor(p.y),bz=Math.floor(p.z);if(!blockMap.has(key(bx,by,bz))){addBlock(bx,by,bz,'stone');player.inv.stone--;updateUI();broadcast({type:'add',x:bx,y:by,z:bz,blockType:'stone'})}};
-function move(dt){
- let dx=0,dz=0;if(keys.w||keys.arrowup)dz-=1;if(keys.s||keys.arrowdown)dz+=1;if(keys.a||keys.arrowleft)dx-=1;if(keys.d||keys.arrowright)dx+=1;
- if(dx||dz){const l=Math.hypot(dx,dz);dx/=l;dz/=l;const sy=Math.sin(player.yaw),cy=Math.cos(player.yaw);const vx=dx*cy-dz*sy,vz=dx*sy+dz*cy;player.x+=vx*player.speed*dt;player.z+=vz*player.speed*dt}
- player.x=Math.max(-R+.5,Math.min(R-.5,player.x));player.z=Math.max(-R+.5,Math.min(R-.5,player.z));
- const ground=heightAt(Math.floor(player.x),Math.floor(player.z))+1.65;player.y=ground;
-}
-let last=performance.now(),sendClock=0;
-function animate(now){requestAnimationFrame(animate);const dt=Math.min(.05,(now-last)/1000);last=now;
- if(playing){move(dt);camera.position.set(player.x,player.y,player.z);camera.rotation.order='YXZ';camera.rotation.y=player.yaw;camera.rotation.x=player.pitch;sendClock+=dt;if(sendClock>.08){broadcast(state());sendClock=0}}
- const day=(Math.sin(now*.00003)+1)/2;sun.intensity=1.1+day*1.6;scene.background.setHSL(.58,.7,.55+day*.18);scene.fog.color.copy(scene.background.color);renderer.render(scene,camera)}
-animate(performance.now());
-addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
-updateUI();
+const world={}, R=24, seed=Math.random()*9999;
+const p={name:"Explorador",x:0,z:5,h:0,yaw:0,level:1,xp:0,hp:100,money:25,inv:{madeira:0,pedra:0,cristal:0,areia:0}};
+let playing=false,keys={},buildMode=false,room="",chat=[];
+function k(x,z){return x+","+z}
+function height(x,z){return Math.max(1,Math.floor(3+Math.sin((x+seed)*.18)*1.4+Math.cos((z-seed)*.15)*1.3+Math.sin((x+z)*.09)*1.6))}
+function block(x,z){return world[k(x,z)]}
+for(let x=-R;x<=R;x++)for(let z=-R;z<=R;z++){let h=height(x,z);world[k(x,z)]={h,type:h<=2?"sand":"grass",tree:Math.random()>.9&&h>3&&Math.hypot(x,z)>6,crystal:Math.random()>.965&&h>3}}
+function addMsg(t){chat.push(t);if(chat.length>20)chat.shift();document.getElementById("msgs").innerHTML=chat.map(x=>"<div>"+escapeHtml(x)+"</div>").join("");document.getElementById("msgs").scrollTop=99999}
+function escapeHtml(s){return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function ui(){document.getElementById("pname").textContent=p.name;document.getElementById("level").textContent=p.level;document.getElementById("xptext").textContent=p.xp;document.getElementById("hptext").textContent=p.hp;document.getElementById("money").textContent=p.money;document.getElementById("hpbar").style.width=p.hp+"%";document.getElementById("slots").innerHTML=Object.entries(p.inv).map(a=>'<span class="slot">'+a[0]+'<br><b>'+a[1]+"</b></span>").join("")}
+function start(){p.name=document.getElementById("name").value.trim()||"Explorador";document.getElementById("pname").textContent=p.name;document.getElementById("menu").style.display="none";document.getElementById("hud").style.display="block";playing=true;addMsg("🌎 Bem-vindo ao mundo!");ui()}
+document.getElementById("play").onclick=start;
+document.getElementById("create").onclick=function(){room=Math.random().toString(36).slice(2,8).toUpperCase();start();addMsg("🏠 Sala criada: "+room)};
+document.getElementById("join").onclick=function(){let c=prompt("Código da sala:");if(c){room=c.toUpperCase();start();addMsg("🔗 Sala: "+room)}};
+addEventListener("keydown",e=>{keys[e.key.toLowerCase()]=true;if(e.code==="Space")mine()});
+addEventListener("keyup",e=>keys[e.key.toLowerCase()]=false);
+document.querySelectorAll("[data-k]").forEach(b=>{b.addEventListener("touchstart",e=>{e.preventDefault();keys[b.dataset.k]=true},{passive:false});b.addEventListener("touchend",e=>{e.preventDefault();keys[b.dataset.k]=false},{passive:false})});
+document.getElementById("mine").onclick=mine;document.getElementById("mmine").onclick=mine;
+document.getElementById("bag").onclick=()=>{let e=document.getElementById("inv");e.style.display=e.style.display==="block"?"none":"block";ui()};
+document.getElementById("save").onclick=()=>{localStorage.setItem("neon-frontier-save",JSON.stringify(p));addMsg("💾 Progresso salvo.")};
+document.getElementById("build").onclick=()=>{buildMode=!buildMode;addMsg(buildMode?"🧱 Modo construção ligado":"🧱 Modo construção desligado")};
+document.getElementById("send").onclick=send;document.getElementById("chatin").onkeydown=e=>{if(e.key==="Enter")send()};
+function send(){let e=document.getElementById("chatin"),t=e.value.trim();if(t){addMsg(p.name+": "+t);e.value=""}}
+function mine(){if(!playing)return;let x=Math.round(p.x),z=Math.round(p.z);let b=block(x,z);if(!b)return;if(b.crystal){p.inv.cristal++;p.xp+=35;b.crystal=false;document.getElementById("quest").textContent="Cristal encontrado!";document.getElementById("qprog").textContent="1 / 1";addMsg("💎 Cristal encontrado!")}else{p.inv[b.type==="sand"?"areia":"pedra"]++;p.xp+=5;b.h=Math.max(1,b.h-1);addMsg("⛏ Bloco minerado")}if(p.xp>=100){p.xp-=100;p.level++;p.money+=30;addMsg("✨ Você subiu para o nível "+p.level+"!")}ui()}
+function move(dt){let dx=0,dz=0;if(keys.w||keys.arrowup)dz-=1;if(keys.s||keys.arrowdown)dz+=1;if(keys.a||keys.arrowleft)dx-=1;if(keys.d||keys.arrowright)dx+=1;if(dx||dz){let l=Math.hypot(dx,dz);dx/=l;dz/=l;p.x+=dx*dt*6;p.z+=dz*dt*6}p.x=Math.max(-R,Math.min(R,p.x));p.z=Math.max(-R,Math.min(R,p.z))}
+function project(x,z,h){let sx=W/2+(x-p.x)*26-(z-p.z)*26;let sy=H/2+(x-p.x)*13+(z-p.z)*13-h*25;return [sx,sy]}
+function poly(points,fill){ctx.beginPath();ctx.moveTo(points[0][0],points[0][1]);for(let i=1;i<points.length;i++)ctx.lineTo(points[i][0],points[i][1]);ctx.closePath();ctx.fillStyle=fill;ctx.fill()}
+function drawBlock(x,z,b){let [sx,sy]=project(x,z,b.h);let top=[[sx,sy],[sx+26,sy+13],[sx,sy+26],[sx-26,sy+13]];poly(top,b.type==="sand"?"#d8c27b":"#55b957");let depth=Math.max(10,b.h*7);poly([[sx-26,sy+13],[sx,sy+26],[sx,sy+26+depth],[sx-26,sy+13+depth]],b.type==="sand"?"#a98d52":"#387b3c");poly([[sx+26,sy+13],[sx,sy+26],[sx,sy+26+depth],[sx+26,sy+13+depth]],b.type==="sand"?"#b39b5d":"#2d6633");if(b.tree){poly([[sx-7,sy-15],[sx+7,sy-15],[sx+7,sy-45],[sx-7,sy-45]],"#79502e");poly([[sx,sy-62],[sx-25,sy-38],[sx-12,sy-24],[sx+12,sy-24],[sx+25,sy-38]],"#267a45")}if(b.crystal){poly([[sx,sy-48],[sx+9,sy-28],[sx,sy-15],[sx-9,sy-28]],"#45eaff");}}
+function draw(){ctx.clearRect(0,0,W,H);let g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,"#69bff0");g.addColorStop(.55,"#b6e7ff");g.addColorStop(.56,"#18351f");g.addColorStop(1,"#08150c");ctx.fillStyle=g;ctx.fillRect(0,0,W,H);let arr=[];for(let x=-R;x<=R;x++)for(let z=-R;z<=R;z++){let b=block(x,z);if(b)arr.push([x+z,b,x,z])}arr.sort((a,b)=>a[0]-b[0]);for(let q of arr)drawBlock(q[2],q[3],q[1]);let [px,py]=project(p.x,p.z,2.5);ctx.fillStyle="#48eaff";ctx.beginPath();ctx.arc(px,py,9,0,Math.PI*2);ctx.fill();ctx.fillStyle="#fff";ctx.font="bold 12px Arial";ctx.textAlign="center";ctx.fillText(p.name,px,py-15);ctx.textAlign="left";ctx.fillStyle="#ffffff99";ctx.font="12px Arial";ctx.fillText("WASD / setas para explorar • ⛏ para minerar",14,H-15)}
+let last=performance.now();function loop(now){let dt=Math.min(.05,(now-last)/1000);last=now;if(playing)move(dt);draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);ui();
+})();
 </script>
 </body></html>
