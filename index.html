@@ -2,201 +2,123 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>Rua 3D</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Rua Explorer</title>
 <style>
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#8cccf0;touch-action:none;font-family:Arial,sans-serif}
-#game{position:fixed;inset:0;width:100%;height:100%;display:block}
-#hud{position:fixed;inset:0;pointer-events:none}
-#title,#status,#hint{position:absolute;background:rgba(0,0,0,.35);color:#fff;border-radius:10px;padding:7px 10px;font-size:12px}
-#title{top:14px;left:14px;font-weight:bold}
-#status{top:14px;right:14px}
-#hint{bottom:18px;left:50%;transform:translateX(-50%);white-space:nowrap}
-#look{position:absolute;right:0;top:0;width:65%;height:100%;pointer-events:auto}
-#joystick{position:absolute;left:18px;bottom:22px;width:128px;height:128px;border-radius:50%;background:rgba(255,255,255,.18);border:2px solid rgba(255,255,255,.45);pointer-events:auto}
-#stick{position:absolute;left:35px;top:35px;width:54px;height:54px;border-radius:50%;background:rgba(255,255,255,.85)}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#87c9ee;font-family:Arial}
+#c{position:fixed;inset:0;width:100%;height:100%}
+#left{position:fixed;left:18px;bottom:22px;width:130px;height:130px;border-radius:50%;background:#ffffff33;border:2px solid #ffffff66}
+#knob{position:absolute;width:54px;height:54px;left:36px;top:36px;border-radius:50%;background:#fff}
+#right{position:fixed;right:0;top:0;width:65%;height:100%}
+#label{position:fixed;top:14px;left:14px;padding:8px 11px;border-radius:10px;background:#0008;color:#fff;font-size:13px;font-weight:bold}
+#hint{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#0008;color:#fff;padding:7px 10px;border-radius:9px;font-size:11px;white-space:nowrap}
 </style>
 </head>
 <body>
-<canvas id="game"></canvas>
-<div id="hud">
-<div id="title">RUA 3D • MOTOR LOCAL</div>
-<div id="status">CARREGADO</div>
-<div id="look"></div>
-<div id="joystick"><div id="stick"></div></div>
-<div id="hint">Arraste à direita para olhar • joystick para andar</div>
-</div>
+<canvas id="c"></canvas>
+<div id="label">RUA EXPLORER</div>
+<div id="right"></div>
+<div id="left"><div id="knob"></div></div>
+<div id="hint">Joystick para andar • arraste à direita para virar</div>
 <script>
 (function(){
-const canvas=document.getElementById('game');
-const ctx=canvas.getContext('2d',{alpha:false});
-const status=document.getElementById('status');
-let W=0,H=0,DPR=1;
+const c=document.getElementById('c'),x=c.getContext('2d'),left=document.getElementById('left'),knob=document.getElementById('knob'),right=document.getElementById('right');
+let W,H,D=1;
+function size(){D=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;c.width=W*D;c.height=H*D;c.style.width=W+'px';c.style.height=H+'px';x.setTransform(D,0,0,D,0,0)}
+addEventListener('resize',size);size();
 
-function resize(){
- DPR=Math.min(devicePixelRatio||1,2);
- W=innerWidth;H=innerHeight;
- canvas.width=Math.floor(W*DPR);canvas.height=Math.floor(H*DPR);
- canvas.style.width=W+'px';canvas.style.height=H+'px';
- ctx.setTransform(DPR,0,0,DPR,0,0);
-}
-addEventListener('resize',resize);resize();
-
-const FOV=Math.PI/3;
-let px=0,pz=14,angle=0;
-let joyX=0,joyY=0;
+let px=0,pz=12,rot=0,jx=0,jy=0,lookId=null,lastLook=0,joyId=null;
 const keys={};
-addEventListener('keydown',e=>keys[e.code]=true);
-addEventListener('keyup',e=>keys[e.code]=false);
+addEventListener('keydown',e=>keys[e.code]=1);
+addEventListener('keyup',e=>keys[e.code]=0);
 
-const objects=[];
-function addHouse(x,z,w,d,h,color){
- objects.push({type:'house',x,z,w,d,h,color});
+const houses=[];
+const colors=['#d7bf9d','#eee7dc','#c98272','#77736e','#5d8eaa','#a95147'];
+for(let i=0;i<7;i++){
+ let z=-8+i*11;
+ houses.push({x:-9,z,w:6.2,h:3.1+(i%2)*.3,col:colors[i%6]});
+ houses.push({x:9,z,w:6.2,h:3.1+((i+1)%2)*.3,col:colors[(i+3)%6]});
 }
-function addTree(x,z,s){
- objects.push({type:'tree',x,z,w:.7*s,d:.7*s,h:3.8*s,color:'#4f7d45'});
+const trees=[[-6,-2,1], [6,7,.8],[-6,29,1],[6,43,.85]];
+const poles=[[-5.8,-12],[5.8,8],[-5.8,31],[5.8,54]];
+
+function angleNorm(a){return Math.atan2(Math.sin(a),Math.cos(a))}
+function screenX(wx,wz){
+ const dx=wx-px,dz=wz-pz;
+ const a=angleNorm(Math.atan2(dx,-dz)-rot);
+ if(Math.abs(a)>1.05)return null;
+ const depth=Math.max(.2,Math.hypot(dx,dz)*Math.cos(a));
+ return {s:W/2+Math.tan(a)*W*.95,depth};
 }
-function addPole(x,z){
- objects.push({type:'pole',x,z,w:.18,d:.18,h:7,color:'#777'});
+function drawHouse(h,p){
+ const k=Math.min(2200/p.depth,8),w=h.w*k,hh=h.h*k;
+ const horizon=H*.52,base=horizon+(H-horizon)*Math.min(1,28/(p.depth+28));
+ const top=base-hh;
+ x.fillStyle=h.col;x.fillRect(p.s-w/2,top,w,hh);
+ x.fillStyle='#f4eee5';x.fillRect(p.s-w*.24,top+hh*.32,w*.17,hh*.22);
+ x.fillStyle='#333';x.fillRect(p.s+w*.05,top+hh*.28,w*.25,hh*.72);
+ x.fillStyle='#ffffff66';x.fillRect(p.s-w/2,top,w,Math.max(3,hh*.04));
 }
+function draw(){
+ x.clearRect(0,0,W,H);
+ x.fillStyle='#87c9ee';x.fillRect(0,0,W,H*.52);
+ x.fillStyle='#7e9e6b';x.fillRect(0,H*.52,W,H*.48);
 
-const colors=['#d8c19f','#eee8dd','#c98473','#77736f','#6090ad','#aa554a','#d2b6a0'];
-[-9,2,13,24,35,46,57].forEach((z,i)=>{
- addHouse(-9,z,6.2,5,3.0+(i%2)*.3,colors[i%colors.length]);
- addHouse(9,z,6.2,5,3.0+((i+1)%2)*.3,colors[(i+3)%colors.length]);
-});
-addTree(-6.1,-2,.9);addTree(6.1,7,.8);addTree(-6.1,29,1);addTree(6.1,43,.85);
-addPole(-5.8,-12);addPole(5.8,8);addPole(-5.8,31);addPole(5.8,54);
+ const hy=H*.52;
+ x.fillStyle='#555';x.beginPath();x.moveTo(W*.36,hy);x.lineTo(W*.64,hy);x.lineTo(W*.95,H);x.lineTo(W*.05,H);x.closePath();x.fill();
+ x.fillStyle='#c1bcb2';
+ x.beginPath();x.moveTo(0,hy);x.lineTo(W*.36,hy);x.lineTo(W*.05,H);x.lineTo(0,H);x.closePath();x.fill();
+ x.beginPath();x.moveTo(W*.64,hy);x.lineTo(W,hy);x.lineTo(W,H);x.lineTo(W*.95,H);x.closePath();x.fill();
 
-function norm(a){return Math.atan2(Math.sin(a),Math.cos(a))}
-function project(o){
- let dx=o.x-px,dz=o.z-pz;
- let dist=Math.hypot(dx,dz);
- let rel=norm(Math.atan2(dx,-dz)-angle);
- if(Math.abs(rel)>FOV*.72)return null;
- let depth=dist*Math.cos(rel);
- if(depth<.15)return null;
- let sx=W/2+Math.tan(rel)/(Math.tan(FOV/2))*W/2;
- return {dist,depth,sx};
-}
+ const all=[];
+ for(const h of houses){const p=screenX(h.x,h.z);if(p)all.push({type:0,o:h,p})}
+ for(const t of trees){const p=screenX(t[0],t[1]);if(p)all.push({type:1,o:t,p})}
+ for(const q of poles){const p=screenX(q[0],q[1]);if(p)all.push({type:2,o:q,p})}
+ all.sort((a,b)=>b.p.depth-a.p.depth);
 
-function render(){
- ctx.clearRect(0,0,W,H);
- ctx.fillStyle='#8cccf0';ctx.fillRect(0,0,W,H*.52);
- ctx.fillStyle='#86a878';ctx.fillRect(0,H*.52,W,H*.48);
-
- // rua
- const horizon=H*.52;
- ctx.fillStyle='#555';
- ctx.beginPath();
- ctx.moveTo(W*.36,horizon);ctx.lineTo(W*.64,horizon);ctx.lineTo(W*.93,H);ctx.lineTo(W*.07,H);ctx.closePath();ctx.fill();
-
- // calçadas
- ctx.fillStyle='#bdb8ad';
- ctx.beginPath();ctx.moveTo(0,horizon);ctx.lineTo(W*.36,horizon);ctx.lineTo(W*.07,H);ctx.lineTo(0,H);ctx.closePath();ctx.fill();
- ctx.beginPath();ctx.moveTo(W*.64,horizon);ctx.lineTo(W,horizon);ctx.lineTo(W,H);ctx.lineTo(W*.93,H);ctx.closePath();ctx.fill();
-
- // linha central
- ctx.strokeStyle='rgba(255,255,255,.55)';ctx.lineWidth=3;
- ctx.setLineDash([20,22]);ctx.beginPath();ctx.moveTo(W/2,horizon);ctx.lineTo(W/2,H);ctx.stroke();ctx.setLineDash([]);
-
- const visible=objects.map(o=>({o,p:project(o)})).filter(x=>x.p).sort((a,b)=>b.p.dist-a.p.dist);
-
- for(const item of visible){
-   const o=item.o,p=item.p;
-   const scale=H/p.depth;
-   if(o.type==='house'){
-     const half=o.w/2;
-     const left=projectPoint(o.x-half,o.z,o);
-     const right=projectPoint(o.x+half,o.z,o);
-     const width=Math.max(8,Math.abs(right-left));
-     const height=Math.min(H*2,o.h*scale*.72);
-     const bottom=horizon+(H-horizon)*Math.min(1,35/(p.depth+35));
-     const top=bottom-height;
-     ctx.fillStyle=o.color;
-     ctx.fillRect(p.sx-width/2,top,width,height);
-     ctx.fillStyle='rgba(255,255,255,.75)';
-     ctx.fillRect(p.sx-width*.26,top+height*.34,width*.18,height*.22);
-     ctx.fillStyle='#353535';
-     ctx.fillRect(p.sx+width*.08,top+height*.30,width*.25,height*.70);
-     ctx.fillStyle='rgba(0,0,0,.18)';
-     ctx.fillRect(p.sx-width/2,top,width,Math.max(3,height*.035));
-   }else if(o.type==='tree'){
-     const r=Math.max(3,scale*.75);
-     const bottom=horizon+(H-horizon)*Math.min(1,30/(p.depth+30));
-     ctx.fillStyle='#684a35';ctx.fillRect(p.sx-r*.12,bottom-r*2.5,r*.24,r*2.5);
-     ctx.fillStyle=o.color;ctx.beginPath();ctx.arc(p.sx,bottom-r*2.7,r,0,Math.PI*2);ctx.fill();
-     ctx.fillStyle='#63864e';ctx.beginPath();ctx.arc(p.sx+r*.45,bottom-r*3,r*.65,0,Math.PI*2);ctx.fill();
-   }else{
-     const h=Math.min(H*1.3,scale*o.h*.72);
-     const bottom=horizon+(H-horizon)*Math.min(1,30/(p.depth+30));
-     ctx.fillStyle='#777';ctx.fillRect(p.sx-2,bottom-h,4,h);
-     ctx.fillStyle='#333';ctx.fillRect(p.sx-14,bottom-h,28,3);
-   }
+ for(const a of all){
+  const p=a.p;
+  if(a.type===0)drawHouse(a.o,p);
+  if(a.type===1){
+   const s=Math.max(4,900/p.depth)*a.o[2],base=hy+(H-hy)*Math.min(1,28/(p.depth+28));
+   x.fillStyle='#684a35';x.fillRect(p.s-2,base-s*3,4,s*3);
+   x.fillStyle='#4f7d45';x.beginPath();x.arc(p.s,base-s*3.2,s,0,Math.PI*2);x.fill();
+  }
+  if(a.type===2){
+   const h=Math.min(H,900/p.depth*7),base=hy+(H-hy)*Math.min(1,28/(p.depth+28));
+   x.fillStyle='#777';x.fillRect(p.s-2,base-h,4,h);
+   x.fillStyle='#333';x.fillRect(p.s-14,base-h,28,3);
+  }
  }
 }
-
-function projectPoint(x,z,o){
- const dx=x-px,dz=z-pz;
- const rel=norm(Math.atan2(dx,-dz)-angle);
- return W/2+Math.tan(rel)/(Math.tan(FOV/2))*W/2;
+function move(dt){
+ let f=(keys.KeyW||keys.ArrowUp?1:0)-(keys.KeyS||keys.ArrowDown?1:0)-jy;
+ let s=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0)+jx;
+ let n=Math.hypot(f,s);if(n>1){f/=n;s/=n}
+ const v=4*dt;
+ px+=(Math.sin(rot)*f+Math.cos(rot)*s)*v;
+ pz+=(-Math.cos(rot)*f+Math.sin(rot)*s)*v;
+ px=Math.max(-5.8,Math.min(5.8,px));pz=Math.max(-70,Math.min(70,pz));
 }
-
 let last=performance.now();
-function loop(now){
- const dt=Math.min(.05,(now-last)/1000);last=now;
- let f=0,s=0;
- if(keys.KeyW||keys.ArrowUp)f++;
- if(keys.KeyS||keys.ArrowDown)f--;
- if(keys.KeyA||keys.ArrowLeft)s--;
- if(keys.KeyD||keys.ArrowRight)s++;
- f+=-joyY;s+=joyX;
- const len=Math.hypot(f,s);if(len>1){f/=len;s/=len}
- const speed=4.0*dt;
- px+=(Math.sin(angle)*f+Math.cos(angle)*s)*speed;
- pz+=(-Math.cos(angle)*f+Math.sin(angle)*s)*speed;
- px=Math.max(-5.7,Math.min(5.7,px));
- pz=Math.max(-68,Math.min(68,pz));
- render();
- requestAnimationFrame(loop);
-}
+function loop(t){const dt=Math.min(.05,(t-last)/1000);last=t;move(dt);draw();requestAnimationFrame(loop)}
 requestAnimationFrame(loop);
 
-// olhar
-const look=document.getElementById('look');
-let lookId=null,lastX=0;
-look.addEventListener('pointerdown',e=>{
- lookId=e.pointerId;lastX=e.clientX;look.setPointerCapture(e.pointerId);
-});
-look.addEventListener('pointermove',e=>{
- if(e.pointerId!==lookId)return;
- angle+=(e.clientX-lastX)*.005;
- lastX=e.clientX;
-});
-look.addEventListener('pointerup',e=>{if(e.pointerId===lookId)lookId=null});
-look.addEventListener('pointercancel',e=>{if(e.pointerId===lookId)lookId=null});
+right.addEventListener('pointerdown',e=>{lookId=e.pointerId;lastLook=e.clientX;right.setPointerCapture(e.pointerId)});
+right.addEventListener('pointermove',e=>{if(e.pointerId===lookId){rot+=(e.clientX-lastLook)*.005;lastLook=e.clientX}});
+right.addEventListener('pointerup',()=>lookId=null);
+right.addEventListener('pointercancel',()=>lookId=null);
 
-// joystick
-const joy=document.getElementById('joystick'),stick=document.getElementById('stick');
-let joyId=null;
-function joyMove(e){
- const r=joy.getBoundingClientRect();
- let dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2);
- const max=34,l=Math.hypot(dx,dy);
- if(l>max){dx=dx/l*max;dy=dy/l*max}
- joyX=dx/max;joyY=dy/max;
- stick.style.transform='translate('+dx+'px,'+dy+'px)';
+function joy(e){
+ const r=left.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
+ let dx=e.clientX-cx,dy=e.clientY-cy,m=34,n=Math.hypot(dx,dy);
+ if(n>m){dx=dx/n*m;dy=dy/n*m}
+ jx=dx/m;jy=dy/m;knob.style.transform='translate('+dx+'px,'+dy+'px)';
 }
-joy.addEventListener('pointerdown',e=>{joyId=e.pointerId;joy.setPointerCapture(e.pointerId);joyMove(e)});
-joy.addEventListener('pointermove',e=>{if(e.pointerId===joyId)joyMove(e)});
-function joyEnd(e){
- if(e.pointerId!==joyId)return;
- joyId=null;joyX=joyY=0;stick.style.transform='translate(0,0)';
-}
-joy.addEventListener('pointerup',joyEnd);joy.addEventListener('pointercancel',joyEnd);
-
-status.textContent='CENA CARREGADA';
+left.addEventListener('pointerdown',e=>{joyId=e.pointerId;left.setPointerCapture(e.pointerId);joy(e)});
+left.addEventListener('pointermove',e=>{if(e.pointerId===joyId)joy(e)});
+function end(e){if(e.pointerId===joyId){joyId=null;jx=jy=0;knob.style.transform='translate(0,0)'}}
+left.addEventListener('pointerup',end);left.addEventListener('pointercancel',end);
 })();
 </script>
 </body>
