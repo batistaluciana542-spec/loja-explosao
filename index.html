@@ -44,26 +44,72 @@ renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
 renderer.setSize(innerWidth,innerHeight);
 document.getElementById('game').appendChild(renderer.domElement);
 
+
+function makeTex(base, noise=18, speck=0){
+  const c=document.createElement('canvas'); c.width=128; c.height=128;
+  const g=c.getContext('2d'); g.fillStyle=base; g.fillRect(0,0,128,128);
+  const img=g.getImageData(0,0,128,128);
+  for(let i=0;i<img.data.length;i+=4){
+    const n=(Math.random()-.5)*noise;
+    img.data[i]=Math.max(0,Math.min(255,img.data[i]+n));
+    img.data[i+1]=Math.max(0,Math.min(255,img.data[i+1]+n));
+    img.data[i+2]=Math.max(0,Math.min(255,img.data[i+2]+n));
+  }
+  g.putImageData(img,0,0);
+  if(speck){
+    for(let i=0;i<speck;i++){
+      g.fillStyle='rgba(40,35,30,'+(0.04+Math.random()*0.12)+')';
+      g.beginPath();g.arc(Math.random()*128,Math.random()*128,Math.random()*2.2+.3,0,Math.PI*2);g.fill();
+    }
+  }
+  const t=new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping;
+  t.repeat.set(2.5,2.5); return t;
+}
+function material(base,noise=18,speck=0,repeatX=2.5,repeatY=2.5){
+  const t=makeTex(base,noise,speck); t.repeat.set(repeatX,repeatY);
+  return new THREE.MeshBasicMaterial({map:t});
+}
+const TEX={
+  road:material('#505050',12,55,10,45),
+  concrete:material('#c7c1b7',14,85,5,45),
+  curb:material('#d8d5cc',8,35,4,20),
+  white:material('#e5dfd5',11,55,2.5,2.5),
+  cream:material('#d5c1a5',14,65,2.5,2.5),
+  pink:material('#c98375',13,60,2.5,2.5),
+  salmon:material('#c36b5d',13,60,2.5,2.5),
+  gray:material('#77736f',15,70,2.5,2.5),
+  blue:material('#4c87ad',13,60,2.5,2.5),
+  red:material('#a94a42',13,55,2.5,2.5),
+  gate:material('#55565a',9,20,3,3),
+  metal:material('#6a6c6c',7,15,3,3),
+  glass:material('#405b64',8,8,2,2),
+  wood:material('#79513b',18,35,2,4),
+  tile:material('#934f38',18,45,5,3),
+  roofDark:material('#62483a',18,45,5,3),
+  green:material('#4d7542',30,70,2,2),
+  leaf2:material('#63814d',28,70,2,2)
+};
+
 const M={
- road:new THREE.MeshBasicMaterial({color:0x505050}),
- asphalt2:new THREE.MeshBasicMaterial({color:0x585858}),
- concrete:new THREE.MeshBasicMaterial({color:0xc8c2b8}),
- curb:new THREE.MeshBasicMaterial({color:0xd8d6cf}),
- white:new THREE.MeshBasicMaterial({color:0xe5dfd5}),
- cream:new THREE.MeshBasicMaterial({color:0xd7c5ac}),
- pink:new THREE.MeshBasicMaterial({color:0xd28b79}),
- salmon:new THREE.MeshBasicMaterial({color:0xc66e61}),
- gray:new THREE.MeshBasicMaterial({color:0x77736f}),
- blue:new THREE.MeshBasicMaterial({color:0x4a8dba}),
- red:new THREE.MeshBasicMaterial({color:0xa94a42}),
- darkGate:new THREE.MeshBasicMaterial({color:0x55565a}),
- metal:new THREE.MeshBasicMaterial({color:0x6b6d6d}),
- glass:new THREE.MeshBasicMaterial({color:0x405c65}),
- wood:new THREE.MeshBasicMaterial({color:0x79523d}),
- tile:new THREE.MeshBasicMaterial({color:0x934f38}),
- roofDark:new THREE.MeshBasicMaterial({color:0x66483a}),
- green:new THREE.MeshBasicMaterial({color:0x4b7542}),
- leaf2:new THREE.MeshBasicMaterial({color:0x5f814b}),
+ road:TEX.road,
+ asphalt2:material('#585858',12,50,10,5),
+ concrete:TEX.concrete,
+ curb:TEX.curb,
+ white:TEX.white,
+ cream:TEX.cream,
+ pink:TEX.pink,
+ salmon:TEX.salmon,
+ gray:TEX.gray,
+ blue:TEX.blue,
+ red:TEX.red,
+ darkGate:TEX.gate,
+ metal:TEX.metal,
+ glass:TEX.glass,
+ wood:TEX.wood,
+ tile:TEX.tile,
+ roofDark:TEX.roofDark,
+ green:TEX.green,
+ leaf2:TEX.leaf2,
  wire:new THREE.MeshBasicMaterial({color:0x222222}),
  black:new THREE.MeshBasicMaterial({color:0x202020})
 };
@@ -100,33 +146,40 @@ function pillar(x,y,z,w,h,m=M.concrete){
 function wallSegment(x,z,w,h,d,m){
  box(w,h,d,x,h/2,z,m);
 }
-function detailedHouse(cfg){
- const {x,z,w,depth,h,wall,gateM,roofM,windows=true,gateX=0,side=false}=cfg;
- // corpo principal e platibanda
- box(w,h,depth,x,h/2,z,wall);
- box(w+.16,.35,depth+.12,x,h+.17,z,wall);
- // telhado baixo visível
- roofSlab(x,z,w+.35,depth+.3,h+.38,roofM);
- // muro frontal e entrada
- const front=z-depth/2-.08;
- const gap=3.0;
- const sideW=(w-gap)/2;
- wallSegment(x-(gap/2+sideW/2),front,sideW,.95,.28,wall);
- wallSegment(x+(gap/2+sideW/2),front,sideW,.95,.28,wall);
- pillar(x-gap/2, .95, front,.28,1.9,M.concrete);
- pillar(x+gap/2, .95, front,.28,1.9,M.concrete);
- gate(x+gateX,1.05,front-.08,gap,2.1,gateM);
- // porta de entrada visível por cima do muro
- box(.95,1.9,.10,x+gateX*.35,1.02,front-.09,M.wood);
- // janelas frontais
- if(windows){
-   window(x-w*.24,1.75,front-.08,1.25,1.05);
-   window(x+w*.19,1.75,front-.08,1.25,1.05);
- }
- // detalhes verticais nas laterais para não parecer uma caixa
- box(.12,h-.45,.22,x-w/2-.03,(h-.45)/2+.15,z,M.curb);
- box(.12,h-.45,.22,x+w/2+.03,(h-.45)/2+.15,z,M.curb);
+
+function facadeDetail(x,z,w,h,wall,front,style){
+  if(style===0){
+    for(let i=0;i<5;i++) box(.055,h*.75,.12,x-w*.36+i*w*.18,.82,front-.08,M.metal);
+    box(w*.72,.12,.12,x,.55,front-.1,M.metal);
+  } else if(style===1){
+    box(2.0,.95,.13,x,1.05,front-.11,M.glass);
+    for(let i=-2;i<=2;i++) box(.05,.9,.15,x+i*.38,1.05,front-.15,M.metal);
+  } else {
+    box(.95,1.8,.11,x-.55,1.02,front-.11,M.wood);
+    window(x+.72,1.72,front-.11,1.15,.9);
+  }
 }
+function detailedHouse(cfg){
+  const {x,z,w,depth,h,wall,gateM,roofM,windows=true,gateX=0,style=0}=cfg;
+  box(w,h,depth,x,h/2,z,wall);
+  box(w+.16,.34,depth+.12,x,h+.17,z,wall);
+  roofSlab(x,z,w+.35,depth+.3,h+.38,roofM);
+  const front=z-depth/2-.08, gap=2.8;
+  const sideW=(w-gap)/2;
+  wallSegment(x-(gap/2+sideW/2),front,sideW,.92,.28,wall);
+  wallSegment(x+(gap/2+sideW/2),front,sideW,.92,.28,wall);
+  pillar(x-gap/2,.95,front,.28,1.9,M.concrete);
+  pillar(x+gap/2,.95,front,.28,1.9,M.concrete);
+  gate(x+gateX,1.05,front-.08,gap,2.08,gateM);
+  facadeDetail(x+gateX,z,w,h,wall,front,style);
+  if(windows){
+    window(x-w*.25,1.76,front-.08,1.18,.98);
+    if(style!==2) window(x+w*.18,1.76,front-.08,1.18,.98);
+  }
+  box(.12,h-.45,.22,x-w/2-.03,(h-.45)/2+.15,z,M.curb);
+  box(.12,h-.45,.22,x+w/2+.03,(h-.45)/2+.15,z,M.curb);
+}
+
 
 // Rua e calçadas com largura mais próxima das fotos.
 box(12,.16,190,0,0,0,M.road);
@@ -149,20 +202,20 @@ for(let z=-75;z<80;z+=8){
 }
 
 // Lado esquerdo: sequência de fachadas, portões e volumes diferentes.
-detailedHouse({x:-9.4,z:-11,w:7.2,depth:6.0,h:3.1,wall:M.pink,gateM:M.darkGate,roofM:M.tile,gateX:.25});
-detailedHouse({x:-9.4,z:0,w:7.0,depth:6.0,h:3.25,wall:M.white,gateM:M.metal,roofM:M.roofDark,gateX:-.4});
-detailedHouse({x:-9.4,z:11,w:7.4,depth:6.3,h:3.0,wall:M.gray,gateM:M.red,roofM:M.tile,gateX:.5});
-detailedHouse({x:-9.4,z:23,w:7.0,depth:6.2,h:3.0,wall:M.cream,gateM:M.darkGate,roofM:M.roofDark,gateX:-.6});
-detailedHouse({x:-9.4,z:36,w:7.3,depth:6.0,h:3.2,wall:M.blue,gateM:M.metal,roofM:M.tile,gateX:.35});
-detailedHouse({x:-9.4,z:50,w:7.1,depth:6.0,h:3.0,wall:M.white,gateM:M.darkGate,roofM:M.roofDark,gateX:-.35});
+detailedHouse({x:-9.4,z:-11,w:7.2,depth:6.0,h:3.1,wall:M.pink,gateM:M.darkGate,roofM:M.tile,gateX:.25,style:0});
+detailedHouse({x:-9.4,z:0,w:7.0,depth:6.0,h:3.25,wall:M.white,gateM:M.metal,roofM:M.roofDark,gateX:-.4,style:1});
+detailedHouse({x:-9.4,z:11,w:7.4,depth:6.3,h:3.0,wall:M.gray,gateM:M.red,roofM:M.tile,gateX:.5,style:2});
+detailedHouse({x:-9.4,z:23,w:7.0,depth:6.2,h:3.0,wall:M.cream,gateM:M.darkGate,roofM:M.roofDark,gateX:-.6,style:0});
+detailedHouse({x:-9.4,z:36,w:7.3,depth:6.0,h:3.2,wall:M.blue,gateM:M.metal,roofM:M.tile,gateX:.35,style:1});
+detailedHouse({x:-9.4,z:50,w:7.1,depth:6.0,h:3.0,wall:M.white,gateM:M.darkGate,roofM:M.roofDark,gateX:-.35,style:2});
 
 // Lado direito.
-detailedHouse({x:9.4,z:-11,w:7.1,depth:6.0,h:3.15,wall:M.white,gateM:M.darkGate,roofM:M.tile,gateX:-.4});
-detailedHouse({x:9.4,z:0,w:7.4,depth:6.2,h:3.0,wall:M.blue,gateM:M.metal,roofM:M.roofDark,gateX:.5});
-detailedHouse({x:9.4,z:11,w:7.0,depth:6.0,h:3.15,wall:M.white,gateM:M.darkGate,roofM:M.tile,gateX:-.55});
-detailedHouse({x:9.4,z:23,w:7.3,depth:6.0,h:3.0,wall:M.gray,gateM:M.red,roofM:M.roofDark,gateX:.4});
-detailedHouse({x:9.4,z:36,w:7.1,depth:6.1,h:3.2,wall:M.blue,gateM:M.darkGate,roofM:M.tile,gateX:-.3});
-detailedHouse({x:9.4,z:50,w:7.4,depth:6.0,h:3.0,wall:M.white,gateM:M.metal,roofM:M.tile,gateX:.45});
+detailedHouse({x:9.4,z:-11,w:7.1,depth:6.0,h:3.15,wall:M.white,gateM:M.darkGate,roofM:M.tile,gateX:-.4,style:1});
+detailedHouse({x:9.4,z:0,w:7.4,depth:6.2,h:3.0,wall:M.blue,gateM:M.metal,roofM:M.roofDark,gateX:.5,style:2});
+detailedHouse({x:9.4,z:11,w:7.0,depth:6.0,h:3.15,wall:M.white,gateM:M.darkGate,roofM:M.tile,gateX:-.55,style:0});
+detailedHouse({x:9.4,z:23,w:7.3,depth:6.0,h:3.0,wall:M.gray,gateM:M.red,roofM:M.roofDark,gateX:.4,style:1});
+detailedHouse({x:9.4,z:36,w:7.1,depth:6.1,h:3.2,wall:M.blue,gateM:M.darkGate,roofM:M.tile,gateX:-.3,style:2});
+detailedHouse({x:9.4,z:50,w:7.4,depth:6.0,h:3.0,wall:M.white,gateM:M.metal,roofM:M.tile,gateX:.45,style:0});
 
 // Muros baixos extras, como nas fotos.
 wallSegment(-9.4,-7,7.0,.8,.22,M.salmon);
