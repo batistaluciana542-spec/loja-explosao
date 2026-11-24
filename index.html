@@ -161,10 +161,17 @@ function house(h){
  const front=q.f>=0;
  const facadeZ=front?z1-.012:z2+.012;
 
- // Parede frontal sólida atrás da porta e das janelas.
- const wallZ=front?z1:z2;
- const wp1=hp(x1,wallZ,0),wp2=hp(x2,wallZ,0),wp3=hp(x2,wallZ,Hh),wp4=hp(x1,wallZ,Hh);
- poly([wp1,wp2,wp3,wp4],h.wall);
+ // Parede do lado mais próximo do jogador, desenhada como uma
+ // superfície sólida independente. Isso impede que a casa pareça vazada.
+ const wallCandidates=[
+   {d:Math.hypot(C.x-h.x,C.z-z1),pts:[hp(x1,z1,0),hp(x2,z1,0),hp(x2,z1,Hh),hp(x1,z1,Hh)],fill:h.wall,front:true},
+   {d:Math.hypot(C.x-h.x,C.z-z2),pts:[hp(x2,z2,0),hp(x1,z2,0),hp(x1,z2,Hh),hp(x2,z2,Hh)],fill:shade(h.side,-22),front:false},
+   {d:Math.hypot(C.x-x1,C.z-h.z),pts:[hp(x1,z2,0),hp(x1,z1,0),hp(x1,z1,Hh),hp(x1,z2,Hh)],fill:shade(h.side,-16),front:false},
+   {d:Math.hypot(C.x-x2,C.z-h.z),pts:[hp(x2,z1,0),hp(x2,z2,0),hp(x2,z2,Hh),hp(x2,z1,Hh)],fill:h.side,front:false}
+ ];
+ wallCandidates.sort((a,b)=>a.d-b.d);
+ const nearestWall=wallCandidates[0];
+ poly(nearestWall.pts,nearestWall.fill);
 
  function panel(cx,cy,w,hgt,fill,border){
    const p1=hp(cx-w/2,facadeZ,cy-hgt/2);
