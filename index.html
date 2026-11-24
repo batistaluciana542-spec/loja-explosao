@@ -1,92 +1,14 @@
-<!doctype html>
-<html lang="pt-BR">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>Rua 3D</title>
-<style>
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#9fcbea;touch-action:none}
-#game{position:fixed;inset:0;width:100%;height:100%;display:block}
-#look{position:fixed;right:0;top:0;width:68%;height:100%;z-index:5}
-#joy{position:fixed;left:18px;bottom:20px;width:136px;height:136px;border:2px solid #fff8;border-radius:50%;background:#ffffff28;z-index:10}
-#stick{position:absolute;left:42px;top:42px;width:52px;height:52px;border-radius:50%;background:#fff;box-shadow:0 3px 12px #0006}
-#hud{position:fixed;top:12px;left:12px;z-index:10;background:#0009;color:#fff;padding:8px 11px;border-radius:9px;font:700 13px Arial}
-#status{position:fixed;top:48px;left:12px;z-index:10;background:#0007;color:#fff;padding:5px 8px;border-radius:7px;font:11px Arial}
-</style>
-</head>
-<body>
-<canvas id="game"></canvas><div id="look"></div><div id="joy"><div id="stick"></div></div>
-<div id="hud">RUA 3D • PRIMEIRA PESSOA</div><div id="status">Motor 3D local...</div>
-<script>
-(function(){
-const c=document.getElementById('game'),gl=c.getContext('webgl',{antialias:false,alpha:false});
-const st=document.getElementById('status');
-if(!gl){st.textContent='WebGL não disponível';return}
-const vs='attribute vec3 p;uniform mat4 mvp;void main(){gl_Position=mvp*vec4(p,1.0);}';
-const fs='precision mediump float;uniform vec3 col;void main(){gl_FragColor=vec4(col,1.0);}';
-function sh(t,s){const x=gl.createShader(t);gl.shaderSource(x,s);gl.compileShader(x);return x}
-const pr=gl.createProgram();gl.attachShader(pr,sh(gl.VERTEX_SHADER,vs));gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,fs));gl.linkProgram(pr);
-const pb=gl.getAttribLocation(pr,'p'),um=gl.getUniformLocation(pr,'mvp'),uc=gl.getUniformLocation(pr,'col');
-gl.useProgram(pr);gl.enable(gl.DEPTH_TEST);gl.enable(gl.CULL_FACE);
-const cubeVerts=new Float32Array([
--1,-1,-1,1,-1,-1,1,1,-1,-1,1,-1,-1,-1,1,1,-1,1,1,1,1,-1,1,1,
--1,1,-1,1,1,-1,1,1,1,-1,1,1,-1,-1,-1,1,-1,-1,1,-1,1,-1,-1,1]);
-const idx=new Uint16Array([0,1,2,0,2,3,4,6,5,4,7,6,8,9,10,8,10,11,12,15,14,12,14,13,16,17,18,16,18,19,20,22,21,20,23,22]);
-const vb=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,vb);gl.bufferData(gl.ARRAY_BUFFER,cubeVerts,gl.STATIC_DRAW);
-const ib=gl.createBuffer();gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,ib);gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,idx,gl.STATIC_DRAW);gl.enableVertexAttribArray(pb);gl.vertexAttribPointer(pb,3,gl.FLOAT,false,0,0);
-function mul(a,b){const o=new Float32Array(16);for(let r=0;r<4;r++)for(let col=0;col<4;col++)for(let k=0;k<4;k++)o[r*4+col]+=a[r*4+k]*b[k*4+col];return o}
-function persp(fov,asp,n,f){const q=1/Math.tan(fov/2),o=new Float32Array(16);o[0]=q/asp;o[5]=q;o[10]=(f+n)/(n-f);o[11]=-1;o[14]=2*f*n/(n-f);return o}
-function ident(){const o=new Float32Array(16);o[0]=o[5]=o[10]=o[15]=1;return o}
-function model(x,y,z,sx,sy,sz){const o=ident();o[0]=sx;o[5]=sy;o[10]=sz;o[12]=x;o[13]=y;o[14]=z;return o}
-function view(yaw,pitch,x,y,z){const cy=Math.cos(yaw),sy=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch);return new Float32Array([
-cy,-sy*sp,sy*cp,0,0,cp,sp,0,-sy,-cy*sp,cy*cp,0,
-sy*x+cy*z,-cp*y+sp*(sy*x+cy*z),-cy*x+sy*z,1])}
-function box(x,y,z,sx,sy,sz,col,yaw=0){let m=model(x,y,z,sx,sy,sz);if(yaw){const r=ident(),co=Math.cos(yaw),si=Math.sin(yaw);r[0]=co;r[2]=si;r[8]=-si;r[10]=co;m=mul(r,m)}gl.uniformMatrix4fv(um,false,mul(VP,m));gl.uniform3fv(uc,col);gl.drawElements(gl.TRIANGLES,36,gl.UNSIGNED_SHORT,0)}
-function resize(){const d=Math.min(devicePixelRatio||1,1.2);c.width=innerWidth*d;c.height=innerHeight*d;gl.viewport(0,0,c.width,c.height)}
-addEventListener('resize',resize);resize();
-
-function house(x,z,c1,c2){
- box(x,1.8,z,3,1.8,2.8,c1);
- box(x,3.65,z,2.9,.55,2.7,c2,.785);
- box(x,1.0,z-2.9,.55,1,.12,[.22,.15,.12]);
- box(x-1.9,2.05,z-2.9,.7,.6,.12,[.65,.82,.9]);
- box(x+1.9,2.05,z-2.9,.7,.6,.12,[.65,.82,.9]);
- box(x,0.12,z-3.25,1.1,.12,.5,[.65,.62,.58]);
-}
-function tree(x,z){box(x,1.4,z,.22,1.4,.22,[.35,.2,.1]);box(x,3,z,1.35,1.35,1.35,[.2,.48,.22]);box(x+.7,3.25,z,1,1,1,[.24,.52,.25])}
-function pole(x,z){box(x,3.5,z,.09,3.5,.09,[.42,.42,.42]);box(x,6.65,z,.6,.07,.07,[.2,.2,.2]);box(x,6.5,z,.18,.18,.18,[.95,.85,.45])}
-
-house(-11.5,2,[.72,.58,.43],[.42,.25,.2]);house(11.5,2,[.78,.75,.7],[.55,.28,.2]);
-house(-11.5,17,[.72,.38,.32],[.32,.22,.18]);house(11.5,17,[.35,.52,.62],[.34,.34,.34]);
-house(-11.5,34,[.68,.53,.4],[.4,.3,.23]);house(11.5,34,[.72,.68,.62],[.5,.3,.25]);
-house(-11.5,53,[.68,.38,.32],[.38,.25,.2]);house(11.5,53,[.68,.65,.58],[.42,.3,.26]);
-house(-11.5,74,[.65,.52,.4],[.4,.28,.22]);house(11.5,74,[.78,.75,.7],[.45,.28,.22]);
-[[-6,9],[6,25],[-6,43],[6,61],[-6,82],[6,99]].forEach(a=>tree(a[0],a[1]));
-[[-6.8,4],[6.8,23],[-6.8,47],[6.8,69],[-6.8,91]].forEach(a=>pole(a[0],a[1]));
-for(let z=-5;z<125;z+=5)box(0,.0,z,7,.08,2.5,[.32,.33,.34]);
-box(-8.2,.08,58,1.2,.1,70,[.7,.68,.63]);box(8.2,.08,58,1.2,.1,70,[.7,.68,.63]);
-box(-11,.04,58,1.4,.05,70,[.42,.55,.34]);box(11,.04,58,1.4,.05,70,[.42,.55,.34]);
-
-let yaw=0,pitch=0,px=0,pz=10,jx=0,jy=0,joyId=null,lookId=null,lx=0,ly=0;
-const joy=document.getElementById('joy'),stick=document.getElementById('stick'),look=document.getElementById('look');
-function jm(e){const r=joy.getBoundingClientRect();let dx=e.clientX-r.left-r.width/2,dy=e.clientY-r.top-r.height/2,m=40,n=Math.hypot(dx,dy);if(n>m){dx*=m/n;dy*=m/n}jx=dx/m;jy=dy/m;stick.style.transform='translate('+dx+'px,'+dy+'px)'}
-joy.onpointerdown=e=>{joyId=e.pointerId;joy.setPointerCapture(e.pointerId);jm(e)};joy.onpointermove=e=>{if(e.pointerId===joyId)jm(e)};
-function je(e){if(e.pointerId===joyId){joyId=null;jx=jy=0;stick.style.transform='translate(0,0)'}}joy.onpointerup=je;joy.onpointercancel=je;
-look.onpointerdown=e=>{lookId=e.pointerId;lx=e.clientX;ly=e.clientY;look.setPointerCapture(e.pointerId)};
-look.onpointermove=e=>{if(e.pointerId!==lookId)return;yaw-=(e.clientX-lx)*.0045;pitch-=(e.clientY-ly)*.0035;pitch=Math.max(-1.1,Math.min(1.1,pitch));lx=e.clientX;ly=e.clientY};
-look.onpointerup=()=>lookId=null;look.onpointercancel=()=>lookId=null;
-
-const VP=new Float32Array(16);
-function frame(){
- const f=-jy,s=jx,sp=.12;
- px+=(Math.sin(yaw)*f+Math.cos(yaw)*s)*sp;pz+=(-Math.cos(yaw)*f+Math.sin(yaw)*s)*sp;
- px=Math.max(-6,Math.min(6,px));pz=Math.max(-2,Math.min(112,pz));
- const P=persp(1.25,c.width/c.height,.05,160),V=view(yaw,pitch,px,1.65,pz);
- VP.set(mul(P,V));gl.clearColor(.62,.79,.92,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
- box(0,-.1,60,7,.08,70,[.28,.29,.3]);
- st.textContent='MUNDO 3D • PRONTO';requestAnimationFrame(frame);
-}
-requestAnimationFrame(frame);
-})();
-</script>
-</body></html>
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><title>Rua 3D Mobile</title><style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#9fcbea;touch-action:none;font-family:Arial}.world{position:fixed;inset:0;overflow:hidden;perspective:700px;background:linear-gradient(#9fcbea 0 52%,#83a46d 52% 100%)}.scene{position:absolute;left:50%;top:52%;width:1px;height:1px;transform-style:preserve-3d}.road{position:absolute;width:14px;height:150px;left:-7px;top:-75px;background:#4d4d4d;transform:translateZ(0);box-shadow:0 0 0 2px #666}.side{position:absolute;width:2.4px;height:150px;top:-75px;background:#c6c0b7}.side.l{left:-9.2px}.side.r{left:6.8px}.house{position:absolute;width:6px;height:3.5px;transform-style:preserve-3d}.body{position:absolute;inset:0;background:var(--c);border:1px solid #333;transform:translateZ(0)}.roof{position:absolute;width:6.4px;height:3px;left:-.2px;top:-1.35px;background:var(--r);clip-path:polygon(50% 0,100% 100%,0 100%);transform:rotateX(90deg) translateZ(1.7px)}.door{position:absolute;width:1px;height:1.9px;left:2.5px;bottom:0;background:#493c35;transform:translateZ(3.01px)}.win{position:absolute;width:1.2px;height:1px;top:1.25px;background:#b9dbe5;border:1px solid #344;transform:translateZ(3.02px)}.w1{left:.7px}.w2{right:.7px}.tree{position:absolute;width:2px;height:5px}.trunk{position:absolute;bottom:0;left:.8px;width:.35px;height:2.7px;background:#68452d}.leaf{position:absolute;bottom:1.7px;left:-.1px;width:2.2px;height:2.2px;border-radius:50%;background:#397443;box-shadow:.8px -.3px 0 #4e874b}.pole{position:absolute;width:.18px;height:7px;background:#777}.arm{position:absolute;width:1.2px;height:.12px;background:#333;top:0;left:-.5px}.lamp{position:absolute;width:.35px;height:.35px;border-radius:50%;background:#f4df8c;top:.15px;left:.55px}.centerline{position:absolute;width:.16px;height:4px;background:#e8d276;left:-.08px}.hud{position:fixed;top:12px;left:12px;z-index:20;background:#000b;color:white;padding:8px 11px;border-radius:9px;font-weight:bold;font-size:13px}.status{position:fixed;top:48px;left:12px;z-index:20;background:#0009;color:white;padding:5px 8px;border-radius:7px;font-size:11px}.look{position:fixed;right:0;top:0;width:68%;height:100%;z-index:5}.joy{position:fixed;left:18px;bottom:20px;width:136px;height:136px;border:2px solid #fff8;border-radius:50%;background:#ffffff28;z-index:20}.stick{position:absolute;left:40px;top:40px;width:52px;height:52px;border-radius:50%;background:#fff;box-shadow:0 3px 12px #0006}.label{position:fixed;bottom:7px;right:8px;color:#fff9;font-size:9px;z-index:20}
+</style></head><body><div class="world" id="world"><div class="scene" id="scene"><div class="road"></div><div class="side l"></div><div class="side r"></div></div></div><div class="look" id="look"></div><div class="joy" id="joy"><div class="stick" id="stick"></div></div><div class="hud">RUA 3D • CELULAR</div><div class="status" id="status">CENA 3D LOCAL • OK</div><div class="label">arraste à direita • joystick à esquerda</div><script>
+(()=>{const S=document.getElementById('scene'),st=document.getElementById('status');let yaw=0,pitch=0,px=0,pz=10,jx=0,jy=0,lookId=null,joyId=null,lx=0,ly=0;
+function H(x,z,c,r){const h=document.createElement('div');h.className='house';h.style.cssText='left:'+x+'px;top:'+(-z*.72)+'px;--c:'+c+';--r:'+r+';transform:translate3d(0,0,'+(z-pz)+'px)';h.innerHTML='<div class="body"></div><div class="roof"></div><div class="door"></div><div class="win w1"></div><div class="win w2"></div>';S.appendChild(h)}
+function T(x,z){const e=document.createElement('div');e.className='tree';e.style.left=x+'px';e.style.top=(-z*.72)+'px';e.innerHTML='<div class="trunk"></div><div class="leaf"></div>';S.appendChild(e)}
+function P(x,z){const e=document.createElement('div');e.className='pole';e.style.left=x+'px';e.style.top=(-z*.72)+'px';e.innerHTML='<div class="arm"></div><div class="lamp"></div>';S.appendChild(e)}
+[[-11.5,2,'#d7bd98','#754a3d'],[11.5,2,'#e7dfd4','#985044'],[-11.5,17,'#c77d6c','#69483c'],[11.5,17,'#6e91a4','#565656'],[-11.5,34,'#d2b58a','#76503d'],[11.5,34,'#dcd4c8','#855348'],[-11.5,53,'#b96e60','#69473c'],[11.5,53,'#d5cec2','#704d45'],[-11.5,74,'#c7aa7f','#704a3b'],[11.5,74,'#e2ddd4','#875346']].forEach(a=>H(a[0],a[1],a[2],a[3]));[[-6,9],[6,25],[-6,43],[6,61],[-6,82],[6,99]].forEach(a=>T(a[0],a[1]));[[-6.8,4],[6.8,23],[-6.8,47],[6.8,69],[-6.8,91]].forEach(a=>P(a[0],a[1]));
+function update(){document.querySelectorAll('.house,.tree,.pole').forEach(e=>{let z=parseFloat(e.style.top)/-.72;let x=parseFloat(e.style.left);let dx=x-px;let dz=z-pz;let X=dx*Math.cos(yaw)-dz*Math.sin(yaw);let Z=dx*Math.sin(yaw)+dz*Math.cos(yaw);e.style.transform='translate3d('+X+'px,'+(pitch*80+Z*.015)+'px,'+(Z*2)+'px) rotateY('+(-yaw)+'rad)';e.style.opacity=Z>0?'1':'.15'});S.style.transform='translateX(-50%) rotateX('+pitch+'rad)';}
+function jm(e){let r=document.getElementById('joy').getBoundingClientRect(),dx=e.clientX-r.left-r.width/2,dy=e.clientY-r.top-r.height/2,m=40,n=Math.hypot(dx,dy);if(n>m){dx*=m/n;dy*=m/n}jx=dx/m;jy=dy/m;document.getElementById('stick').style.transform='translate('+dx+'px,'+dy+'px)'}
+const j=document.getElementById('joy');j.onpointerdown=e=>{joyId=e.pointerId;j.setPointerCapture(e.pointerId);jm(e)};j.onpointermove=e=>{if(e.pointerId===joyId)jm(e)};j.onpointerup=j.onpointercancel=e=>{if(e.pointerId===joyId){joyId=null;jx=jy=0;document.getElementById('stick').style.transform='translate(0,0)'}};
+const l=document.getElementById('look');l.onpointerdown=e=>{lookId=e.pointerId;lx=e.clientX;ly=e.clientY;l.setPointerCapture(e.pointerId)};l.onpointermove=e=>{if(e.pointerId!==lookId)return;yaw-=(e.clientX-lx)*.006;pitch-=(e.clientY-ly)*.004;pitch=Math.max(-.6,Math.min(.6,pitch));lx=e.clientX;ly=e.clientY};l.onpointerup=l.onpointercancel=()=>lookId=null;
+function loop(){const f=-jy,s=jx,sp=.16;px+=(Math.sin(yaw)*f+Math.cos(yaw)*s)*sp;pz+=(-Math.cos(yaw)*f+Math.sin(yaw)*s)*sp;px=Math.max(-6,Math.min(6,px));pz=Math.max(-1,Math.min(110,pz));update();requestAnimationFrame(loop)}loop();})();
+</script></body></html>
