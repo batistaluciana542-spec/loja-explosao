@@ -94,132 +94,97 @@ function ground(){
 function house(h){
  const x1=h.x-h.w/2,x2=h.x+h.w/2,z1=h.z-h.d/2,z2=h.z+h.d/2;
  const Hh=h.h,roofH=Hh+.72;
- const verts=[
-  [x1,z1,0],[x2,z1,0],[x2,z2,0],[x1,z2,0],
-  [x1,z1,Hh],[x2,z1,Hh],[x2,z2,Hh],[x1,z2,Hh],
-  [h.x,z1,roofH],[h.x,z2,roofH]
- ];
-
- // Projeção própria das casas: não deixa uma única quina inválida
- // apagar a face inteira. O renderer principal continua intocado.
  function hp(x,z,hv=0){
-   const q=cam(x,z);
-   const focal=Math.min(W,H)*.92;
-   const pc=Math.cos(C.pitch);
-   const safeF=Math.max(q.f,.36);
-   const vertical=(hv-C.cameraH)*pc-q.f*Math.sin(C.pitch);
-   const depth=Math.max(safeF*pc+hv*Math.sin(C.pitch),.26);
-   const scale=focal/depth;
+   const q=cam(x,z),focal=Math.min(W,H)*.92,pc=Math.cos(C.pitch);
+   const safeF=Math.max(q.f,.36),vertical=(hv-C.cameraH)*pc-q.f*Math.sin(C.pitch);
+   const depth=Math.max(safeF*pc+hv*Math.sin(C.pitch),.26),scale=focal/depth;
    return{x:W/2+q.s*scale,y:H*.53-vertical*scale,s:scale,d:q.f};
  }
- const p=verts.map(v=>hp(v[0],v[1],v[2]));
+ const p0=hp(x1,z1,0),p1=hp(x2,z1,0),p2=hp(x2,z2,0),p3=hp(x1,z2,0);
+ const p4=hp(x1,z1,Hh),p5=hp(x2,z1,Hh),p6=hp(x2,z2,Hh),p7=hp(x1,z2,Hh);
+ const ridge1=hp(h.x,z1,roofH),ridge2=hp(h.x,z2,roofH);
 
+ // Volume principal, com iluminação diferente em cada lado.
  const faces=[
-  {ids:[0,1,5,4],fill:h.wall},
-  {ids:[1,2,6,5],fill:h.side},
-  {ids:[2,3,7,6],fill:shade(h.side,-22)},
-  {ids:[3,0,4,7],fill:shade(h.side,-16)}
+  {p:[p0,p1,p5,p4],d:(p0.d+p1.d+p5.d+p4.d)/4,c:h.wall},
+  {p:[p1,p2,p6,p5],d:(p1.d+p2.d+p6.d+p5.d)/4,c:h.side},
+  {p:[p2,p3,p7,p6],d:(p2.d+p3.d+p7.d+p6.d)/4,c:shade(h.side,-22)},
+  {p:[p3,p0,p4,p7],d:(p3.d+p0.d+p4.d+p7.d)/4,c:shade(h.side,-14)}
  ];
+ faces.sort((a,b)=>b.d-a.d);
+ faces.forEach(f=>poly(f.p,f.c));
 
- faces.sort((a,b)=>{
-   let da=0,db=0;
-   for(const id of a.ids)da+=p[id].d;
-   for(const id of b.ids)db+=p[id].d;
-   return db/a.ids.length-da/b.ids.length;
- });
- for(const f of faces)poly(f.ids.map(id=>p[id]),f.fill);
+ // Parede lateral da rua, mantida sólida e com espessura.
+ const streetX=h.x<0?x2:x1, outerX=streetX+(h.x<0?.16:-.16);
+ const streetSide=h.x<0?shade(h.side,-5):h.side;
+ const s1=hp(streetX,z1,0),s2=hp(streetX,z2,0),s3=hp(streetX,z2,Hh),s4=hp(streetX,z1,Hh);
+ const o1=hp(outerX,z1,0),o2=hp(outerX,z2,0),o3=hp(outerX,z2,Hh),o4=hp(outerX,z1,Hh);
+ poly([s1,s2,s3,s4],streetSide);
+ poly([s1,o1,o4,s4],shade(streetSide,-14));
+ poly([s2,o2,o3,s3],shade(streetSide,8));
 
- // PAREDE DA CASA VOLTADA PARA A RUA.
-// Esta lateral tem espessura real, para não parecer que a casa está
-// aberta ou sem parede quando vista do meio da rua.
- const streetX = h.x < 0 ? x2 : x1;
- const streetSide = h.x < 0 ? shade(h.side,-6) : h.side;
- const thickness = h.x < 0 ? .16 : -.16;
- const outerX = streetX + thickness;
-
- const sw1=hp(streetX,z1,0),sw2=hp(streetX,z2,0),sw3=hp(streetX,z2,Hh),sw4=hp(streetX,z1,Hh);
- const ow1=hp(outerX,z1,0),ow2=hp(outerX,z2,0),ow3=hp(outerX,z2,Hh),ow4=hp(outerX,z1,Hh);
-
- // Face inteira da parede.
- poly([sw1,sw2,sw3,sw4],streetSide);
-
- // Espessura nas duas pontas da parede.
- poly([sw1,ow1,ow4,sw4],shade(streetSide,-14));
- poly([sw2,ow2,ow3,sw3],shade(streetSide,8));
-
- // Linha externa discreta para marcar a quina 3D.
- line([ow1,ow2,ow3,ow4,ow1],shade(streetSide,-28),Math.max(1.2,sw1.s*.018));
-
- // PROJEÇÃO PRÓPRIA DO TETO
- // O telhado não usa mais a projeção das paredes. Cada vértice é
- // projetado separadamente e as águas são ordenadas pela profundidade.
- function roofPoint(x,z,hv){
-   const q=cam(x,z);
-   const focal=Math.min(W,H)*.92;
-   const pc=Math.cos(C.pitch);
-   const safeF=Math.max(q.f,.36);
-   const vertical=(hv-C.cameraH)*pc-q.f*Math.sin(C.pitch);
-   const depth=Math.max(safeF*pc+hv*Math.sin(C.pitch),.26);
-   const scale=focal/depth;
-   return{x:W/2+q.s*scale,y:H*.53-vertical*scale,s:scale,d:q.f};
- }
- const roofFaces=[
-   {pts:[roofPoint(x1,z1,Hh),roofPoint(x2,z1,Hh),roofPoint(h.x,z1,roofH)],fill:shade(h.roof,4)},
-   {pts:[roofPoint(h.x,z1,roofH),roofPoint(x2,z1,Hh),roofPoint(x2,z2,Hh),roofPoint(h.x,z2,roofH)],fill:h.roof},
-   {pts:[roofPoint(h.x,z2,roofH),roofPoint(x2,z2,Hh),roofPoint(x1,z2,Hh)],fill:shade(h.roof,-10)},
-   {pts:[roofPoint(x1,z2,Hh),roofPoint(h.x,z2,roofH),roofPoint(h.x,z1,roofH),roofPoint(x1,z1,Hh)],fill:shade(h.roof,-14)}
+ // Telhado mais bonito: duas águas + beiral, sem depender da projeção das paredes.
+ const e=.22;
+ const roof=[
+  {p:[hp(x1-e,z1-e,Hh),hp(x2+e,z1-e,Hh),hp(h.x,z1-e,roofH)],d:0,c:shade(h.roof,8)},
+  {p:[hp(h.x,z1-e,roofH),hp(x2+e,z1-e,Hh),hp(x2+e,z2+e,Hh),hp(h.x,z2+e,roofH)],d:0,c:h.roof},
+  {p:[hp(h.x,z2+e,roofH),hp(x2+e,z2+e,Hh),hp(x1-e,z2+e,Hh)],d:0,c:shade(h.roof,-12)},
+  {p:[hp(x1-e,z2+e,Hh),hp(h.x,z2+e,roofH),hp(h.x,z1-e,roofH),hp(x1-e,z1-e,Hh)],d:0,c:shade(h.roof,-18)}
  ];
- roofFaces.sort((a,b)=>{
-   const da=a.pts.reduce((s,v)=>s+v.d,0)/a.pts.length;
-   const db=b.pts.reduce((s,v)=>s+v.d,0)/b.pts.length;
-   return db-da;
- });
- for(const f of roofFaces)poly(f.pts,f.fill);
+ roof.forEach(f=>f.d=f.p.reduce((s,v)=>s+v.d,0)/f.p.length);
+ roof.sort((a,b)=>b.d-a.d);roof.forEach(f=>poly(f.p,f.c));
 
- // Fachada mais próxima. Os detalhes ficam sobre uma parede
- // completa, para a casa nunca parecer vazada do lado do jogador.
- const q=cam(h.x,h.z);
- const front=q.f>=0;
- const facadeZ=front?z1-.012:z2+.012;
-
- // Parede frontal sólida atrás da porta e das janelas.
- const wallZ=front?z1:z2;
- const wp1=hp(x1,wallZ,0),wp2=hp(x2,wallZ,0),wp3=hp(x2,wallZ,Hh),wp4=hp(x1,wallZ,Hh);
- poly([wp1,wp2,wp3,wp4],h.wall);
+ // Escolhe a fachada que está voltada para o jogador.
+ const q=cam(h.x,h.z),front=q.f>=0,facadeZ=front?z1-.035:z2+.035;
+ const w1=hp(x1,front?z1:z2,0),w2=hp(x2,front?z1:z2,0),w3=hp(x2,front?z1:z2,Hh),w4=hp(x1,front?z1:z2,Hh);
+ poly([w1,w2,w3,w4],h.wall);
 
  function panel(cx,cy,w,hgt,fill,border){
-   const p1=hp(cx-w/2,facadeZ,cy-hgt/2);
-   const p2=hp(cx+w/2,facadeZ,cy-hgt/2);
-   const p3=hp(cx+w/2,facadeZ,cy+hgt/2);
-   const p4=hp(cx-w/2,facadeZ,cy+hgt/2);
+   const p1=hp(cx-w/2,facadeZ,cy-hgt/2),p2=hp(cx+w/2,facadeZ,cy-hgt/2);
+   const p3=hp(cx+w/2,facadeZ,cy+hgt/2),p4=hp(cx-w/2,facadeZ,cy+hgt/2);
    poly([p1,p2,p3,p4],fill);
-   if(border)line([p1,p2,p3,p4,p1],border,Math.max(1,p1.s*.012));
+   if(border)line([p1,p2,p3,p4,p1],border,Math.max(1,p1.s*.014));
    return{p1,p2,p3,p4};
  }
 
- hp;
- panel(h.x-.72,1.0,.82,1.75,h.door,"#3a2a24");
- const win1=panel(h.x+.72,2.02,1.12,.78,h.win,h.trim);
- const win2=panel(h.x-.72,2.08,.82,.66,h.win,h.trim);
+ // Porta com moldura, maçaneta e pequena marquise.
+ const door=panel(h.x-.72,1.02,.88,1.82,h.door,shade(h.trim,-15));
+ const dm=hp(h.x-.38,1.0,1.0);if(dm){ctx.fillStyle="#d4b25d";ctx.beginPath();ctx.arc(dm.x,dm.y,Math.max(1.5,dm.s*.025),0,Math.PI*2);ctx.fill();}
+ const aw1=hp(h.x-1.22,1.98,1.93),aw2=hp(h.x-.22,1.98,1.93),aw3=hp(h.x-.22,1.98,2.08),aw4=hp(h.x-1.22,1.98,2.08);
+ poly([aw1,aw2,aw3,aw4],shade(h.roof,-6));
 
+ const win1=panel(h.x+.72,2.04,1.22,.82,h.win,h.trim);
+ const win2=panel(h.x-.72,2.14,.82,.64,h.win,h.trim);
  function cross(w){
    const mx=(w.p1.x+w.p2.x)/2,my=(w.p1.y+w.p3.y)/2;
-   line([{x:mx,y:w.p1.y},{x:mx,y:w.p3.y}],"#52666a",Math.max(1,w.p1.s*.008));
-   line([{x:w.p1.x,y:my},{x:w.p2.x,y:my}],"#52666a",Math.max(1,w.p1.s*.008));
+   line([{x:mx,y:w.p1.y},{x:mx,y:w.p3.y}],"#52666a",Math.max(1,w.p1.s*.009));
+   line([{x:w.p1.x,y:my},{x:w.p2.x,y:my}],"#52666a",Math.max(1,w.p1.s*.009));
  }
  cross(win1);cross(win2);
 
+ // Pequena jardineira/grade frontal.
  if(h.style===0||h.style===3){
-   panel(h.x+1.55,.72,.9,1.0,h.gate||"#5a514a","#393735");
+   const g=panel(h.x+1.55,.72,.95,1.0,h.gate||"#5a514a","#393735");
+   for(let k=-2;k<=2;k++){
+     const xx=h.x+1.55+k*.16;
+     line([hp(xx,facadeZ,.25),hp(xx,facadeZ,1.18)],"#292827",Math.max(1,g.p1.s*.006));
+   }
  }
 
- const mz=front?z1-.46:z2+.46;
+ // Muros baixos e entrada, deixando a fachada mais residencial.
+ const mz=front?z1-.5:z2+.5;
  function wallSeg(aa,bb){
-   const p1=hp(aa,mz,0),p2=hp(bb,mz,0),p3=hp(bb,mz,.5),p4=hp(aa,mz,.5);
+   const p1=hp(aa,mz,0),p2=hp(bb,mz,0),p3=hp(bb,mz,.52),p4=hp(aa,mz,.52);
    poly([p1,p2,p3,p4],shade(h.wall,-30));
+   line([p1,p2,p3,p4,p1],shade(h.trim,-30),Math.max(1,genericWidth(p1.s)));
  }
- wallSeg(x1-.28,h.x-1.08);
- wallSeg(h.x+1.08,x2+.28);
+ function genericWidth(s){return Math.max(.8,s*.006)}
+ wallSeg(x1-.35,h.x-1.15);wallSeg(h.x+1.15,x2+.35);
+
+ // Faixa de base da casa, como rodapé.
+ const bz=front?z1-.05:z2+.05;
+ const bp1=hp(x1,bz,.05),bp2=hp(x2,bz,.05),bp3=hp(x2,bz,.25),bp4=hp(x1,bz,.25);
+ poly([bp1,bp2,bp3,bp4],shade(h.wall,-18));
 }
 function tree(x,z){
  const base=proj(x,z,0), trunkTop=proj(x,z,3.0);
