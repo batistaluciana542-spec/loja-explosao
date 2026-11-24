@@ -1,125 +1,39 @@
-<!doctype html>
-<html lang="pt-BR">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Rua Explorer</title>
-<style>
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#87c9ee;font-family:Arial}
-#c{position:fixed;inset:0;width:100%;height:100%}
-#left{position:fixed;left:18px;bottom:22px;width:130px;height:130px;border-radius:50%;background:#ffffff33;border:2px solid #ffffff66}
-#knob{position:absolute;width:54px;height:54px;left:36px;top:36px;border-radius:50%;background:#fff}
-#right{position:fixed;right:0;top:0;width:65%;height:100%}
-#label{position:fixed;top:14px;left:14px;padding:8px 11px;border-radius:10px;background:#0008;color:#fff;font-size:13px;font-weight:bold}
-#hint{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#0008;color:#fff;padding:7px 10px;border-radius:9px;font-size:11px;white-space:nowrap}
-</style>
-</head>
-<body>
-<canvas id="c"></canvas>
-<div id="label">RUA EXPLORER</div>
-<div id="right"></div>
-<div id="left"><div id="knob"></div></div>
-<div id="hint">Joystick para andar • arraste à direita para virar</div>
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>Rua Explorer</title><style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#8fcdf0;font-family:Arial,sans-serif;touch-action:none}
+#scene{position:fixed;inset:0;width:100%;height:100%;display:block}
+#hud{position:fixed;top:12px;left:12px;background:#0009;color:white;padding:8px 11px;border-radius:10px;font-size:13px;font-weight:700}
+#look{position:fixed;right:0;top:0;width:62%;height:100%}
+#joy{position:fixed;left:18px;bottom:20px;width:124px;height:124px;border-radius:50%;background:#ffffff30;border:2px solid #fff8}
+#stick{position:absolute;left:35px;top:35px;width:50px;height:50px;border-radius:50%;background:#fff;box-shadow:0 2px 8px #0005}
+</style></head><body>
+<svg id="scene" viewBox="0 0 1000 700" preserveAspectRatio="none">
+<rect width="1000" height="365" fill="#8fcdf0"/><rect y="365" width="1000" height="335" fill="#7f9e68"/>
+<path d="M370 365 L630 365 L930 700 L70 700 Z" fill="#555"/>
+<path d="M0 365 L370 365 L70 700 L0 700Z" fill="#c3beb5"/><path d="M630 365 L1000 365 L1000 700 L930 700Z" fill="#c3beb5"/>
+<g id="world">
+<g transform="translate(180 250)"><rect width="145" height="115" fill="#d6bd99"/><rect x="18" y="58" width="35" height="57" fill="#493c35"/><rect x="80" y="48" width="35" height="30" fill="#eee"/><polygon points="0,0 145,0 130,-22 15,-22" fill="#754f3e"/></g>
+<g transform="translate(675 260)"><rect width="145" height="105" fill="#eee5d9"/><rect x="25" y="50" width="35" height="55" fill="#4b4039"/><rect x="88" y="45" width="30" height="28" fill="#9bc7d9"/><polygon points="0,0 145,0 130,-20 15,-20" fill="#9d5548"/></g>
+<g transform="translate(95 325) scale(.72)"><rect width="145" height="115" fill="#c97d6c"/><rect x="20" y="57" width="35" height="58" fill="#333"/><rect x="82" y="45" width="32" height="30" fill="#eee"/><polygon points="0,0 145,0 130,-22 15,-22" fill="#71493e"/></g>
+<g transform="translate(760 330) scale(.72)"><rect width="145" height="115" fill="#668ba0"/><rect x="20" y="57" width="35" height="58" fill="#333"/><rect x="82" y="45" width="32" height="30" fill="#eee"/><polygon points="0,0 145,0 130,-22 15,-22" fill="#555"/></g>
+<g fill="#684a35"><rect x="155" y="315" width="8" height="55"/><rect x="840" y="315" width="8" height="55"/></g>
+<g fill="#4d7d46"><circle cx="159" cy="306" r="34"/><circle cx="844" cy="306" r="34"/></g>
+<g fill="#777"><rect x="300" y="300" width="7" height="90"/><rect x="700" y="300" width="7" height="90"/></g>
+<g fill="#333"><rect x="283" y="300" width="41" height="5"/><rect x="683" y="300" width="41" height="5"/></g>
+</g></svg>
+<div id="hud">RUA EXPLORER</div><div id="look"></div><div id="joy"><div id="stick"></div></div>
 <script>
 (function(){
-const c=document.getElementById('c'),x=c.getContext('2d'),left=document.getElementById('left'),knob=document.getElementById('knob'),right=document.getElementById('right');
-let W,H,D=1;
-function size(){D=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;c.width=W*D;c.height=H*D;c.style.width=W+'px';c.style.height=H+'px';x.setTransform(D,0,0,D,0,0)}
-addEventListener('resize',size);size();
-
-let px=0,pz=12,rot=0,jx=0,jy=0,lookId=null,lastLook=0,joyId=null;
-const keys={};
-addEventListener('keydown',e=>keys[e.code]=1);
-addEventListener('keyup',e=>keys[e.code]=0);
-
-const houses=[];
-const colors=['#d7bf9d','#eee7dc','#c98272','#77736e','#5d8eaa','#a95147'];
-for(let i=0;i<7;i++){
- let z=-8+i*11;
- houses.push({x:-9,z,w:6.2,h:3.1+(i%2)*.3,col:colors[i%6]});
- houses.push({x:9,z,w:6.2,h:3.1+((i+1)%2)*.3,col:colors[(i+3)%6]});
-}
-const trees=[[-6,-2,1], [6,7,.8],[-6,29,1],[6,43,.85]];
-const poles=[[-5.8,-12],[5.8,8],[-5.8,31],[5.8,54]];
-
-function angleNorm(a){return Math.atan2(Math.sin(a),Math.cos(a))}
-function screenX(wx,wz){
- const dx=wx-px,dz=wz-pz;
- const a=angleNorm(Math.atan2(dx,-dz)-rot);
- if(Math.abs(a)>1.05)return null;
- const depth=Math.max(.2,Math.hypot(dx,dz)*Math.cos(a));
- return {s:W/2+Math.tan(a)*W*.95,depth};
-}
-function drawHouse(h,p){
- const k=Math.min(2200/p.depth,8),w=h.w*k,hh=h.h*k;
- const horizon=H*.52,base=horizon+(H-horizon)*Math.min(1,28/(p.depth+28));
- const top=base-hh;
- x.fillStyle=h.col;x.fillRect(p.s-w/2,top,w,hh);
- x.fillStyle='#f4eee5';x.fillRect(p.s-w*.24,top+hh*.32,w*.17,hh*.22);
- x.fillStyle='#333';x.fillRect(p.s+w*.05,top+hh*.28,w*.25,hh*.72);
- x.fillStyle='#ffffff66';x.fillRect(p.s-w/2,top,w,Math.max(3,hh*.04));
-}
-function draw(){
- x.clearRect(0,0,W,H);
- x.fillStyle='#87c9ee';x.fillRect(0,0,W,H*.52);
- x.fillStyle='#7e9e6b';x.fillRect(0,H*.52,W,H*.48);
-
- const hy=H*.52;
- x.fillStyle='#555';x.beginPath();x.moveTo(W*.36,hy);x.lineTo(W*.64,hy);x.lineTo(W*.95,H);x.lineTo(W*.05,H);x.closePath();x.fill();
- x.fillStyle='#c1bcb2';
- x.beginPath();x.moveTo(0,hy);x.lineTo(W*.36,hy);x.lineTo(W*.05,H);x.lineTo(0,H);x.closePath();x.fill();
- x.beginPath();x.moveTo(W*.64,hy);x.lineTo(W,hy);x.lineTo(W,H);x.lineTo(W*.95,H);x.closePath();x.fill();
-
- const all=[];
- for(const h of houses){const p=screenX(h.x,h.z);if(p)all.push({type:0,o:h,p})}
- for(const t of trees){const p=screenX(t[0],t[1]);if(p)all.push({type:1,o:t,p})}
- for(const q of poles){const p=screenX(q[0],q[1]);if(p)all.push({type:2,o:q,p})}
- all.sort((a,b)=>b.p.depth-a.p.depth);
-
- for(const a of all){
-  const p=a.p;
-  if(a.type===0)drawHouse(a.o,p);
-  if(a.type===1){
-   const s=Math.max(4,900/p.depth)*a.o[2],base=hy+(H-hy)*Math.min(1,28/(p.depth+28));
-   x.fillStyle='#684a35';x.fillRect(p.s-2,base-s*3,4,s*3);
-   x.fillStyle='#4f7d45';x.beginPath();x.arc(p.s,base-s*3.2,s,0,Math.PI*2);x.fill();
-  }
-  if(a.type===2){
-   const h=Math.min(H,900/p.depth*7),base=hy+(H-hy)*Math.min(1,28/(p.depth+28));
-   x.fillStyle='#777';x.fillRect(p.s-2,base-h,4,h);
-   x.fillStyle='#333';x.fillRect(p.s-14,base-h,28,3);
-  }
- }
-}
-function move(dt){
- let f=(keys.KeyW||keys.ArrowUp?1:0)-(keys.KeyS||keys.ArrowDown?1:0)-jy;
- let s=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0)+jx;
- let n=Math.hypot(f,s);if(n>1){f/=n;s/=n}
- const v=4*dt;
- px+=(Math.sin(rot)*f+Math.cos(rot)*s)*v;
- pz+=(-Math.cos(rot)*f+Math.sin(rot)*s)*v;
- px=Math.max(-5.8,Math.min(5.8,px));pz=Math.max(-70,Math.min(70,pz));
-}
-let last=performance.now();
-function loop(t){const dt=Math.min(.05,(t-last)/1000);last=t;move(dt);draw();requestAnimationFrame(loop)}
-requestAnimationFrame(loop);
-
-right.addEventListener('pointerdown',e=>{lookId=e.pointerId;lastLook=e.clientX;right.setPointerCapture(e.pointerId)});
-right.addEventListener('pointermove',e=>{if(e.pointerId===lookId){rot+=(e.clientX-lastLook)*.005;lastLook=e.clientX}});
-right.addEventListener('pointerup',()=>lookId=null);
-right.addEventListener('pointercancel',()=>lookId=null);
-
-function joy(e){
- const r=left.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
- let dx=e.clientX-cx,dy=e.clientY-cy,m=34,n=Math.hypot(dx,dy);
- if(n>m){dx=dx/n*m;dy=dy/n*m}
- jx=dx/m;jy=dy/m;knob.style.transform='translate('+dx+'px,'+dy+'px)';
-}
-left.addEventListener('pointerdown',e=>{joyId=e.pointerId;left.setPointerCapture(e.pointerId);joy(e)});
-left.addEventListener('pointermove',e=>{if(e.pointerId===joyId)joy(e)});
-function end(e){if(e.pointerId===joyId){joyId=null;jx=jy=0;knob.style.transform='translate(0,0)'}}
-left.addEventListener('pointerup',end);left.addEventListener('pointercancel',end);
+var world=document.getElementById('world'),look=document.getElementById('look'),joy=document.getElementById('joy'),stick=document.getElementById('stick');
+var ox=0,oy=0,rot=0,lookId=null,joyId=null,lx=0,jx=0,jy=0;
+function apply(){world.setAttribute('transform','translate('+ox+' '+oy+') rotate('+rot+' 500 365)')}
+look.addEventListener('pointerdown',function(e){lookId=e.pointerId;lx=e.clientX;look.setPointerCapture(e.pointerId)});
+look.addEventListener('pointermove',function(e){if(e.pointerId===lookId){rot+=(e.clientX-lx)*.08;lx=e.clientX;apply()}});
+look.addEventListener('pointerup',function(){lookId=null});look.addEventListener('pointercancel',function(){lookId=null});
+function joyMove(e){var r=joy.getBoundingClientRect(),dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2),m=34,n=Math.hypot(dx,dy);if(n>m){dx=dx/n*m;dy=dy/n*m}jx=dx/m;jy=dy/m;stick.style.transform='translate('+dx+'px,'+dy+'px)'}
+joy.addEventListener('pointerdown',function(e){joyId=e.pointerId;joy.setPointerCapture(e.pointerId);joyMove(e)});
+joy.addEventListener('pointermove',function(e){if(e.pointerId===joyId)joyMove(e)});
+function end(e){if(e.pointerId===joyId){joyId=null;jx=jy=0;stick.style.transform='translate(0,0)'}}
+joy.addEventListener('pointerup',end);joy.addEventListener('pointercancel',end);
+function loop(){ox+=jx*.8;oy-=jy*.8;if(ox>80)ox=80;if(ox<-80)ox=-80;if(oy>70)oy=70;if(oy<-70)oy=-70;apply();requestAnimationFrame(loop)}loop();
 })();
-</script>
-</body>
-</html>
+</script></body></html>
