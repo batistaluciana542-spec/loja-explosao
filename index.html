@@ -33,13 +33,13 @@ function shade(hex,n){let v=parseInt(hex.slice(1),16),r=Math.max(0,Math.min(255,
 function cam(x,z){let dx=x-C.x,dz=z-C.z,co=Math.cos(C.yaw),si=Math.sin(C.yaw);return{f:dx*si+dz*co,s:dx*co-dz*si}}
 function proj(x,z,h=0){
  let q=cam(x,z);
- if(q.f<.05)return null;
+ if(q.f<.35)return null;
  const focal=Math.min(W,H)*.92;
  const pitchF=Math.sin(C.pitch)*focal;
  const pitchC=Math.cos(C.pitch);
  const vertical=(h-C.cameraH)*pitchC-q.f*Math.sin(C.pitch);
  const depth=q.f*pitchC+h*Math.sin(C.pitch);
- if(depth<=.05)return null;
+ if(depth<=.25)return null;
  const scale=focal/depth;
  return{x:W/2+q.s*scale,y:H*.53-vertical*scale,s:scale,d:q.f};
 }
@@ -54,21 +54,21 @@ function ground(){
  ctx.fillStyle="#9bd0ea";
  ctx.fillRect(0,0,W,H);
 
- // O piso inteiro do mundo é verde. Nada do piso depende de C.z.
+ // Depois da calçada, todo o terreno é verde.
  const horizon=Math.max(0,Math.min(H,H*.53+Math.sin(C.pitch)*Math.min(W,H)*.92));
  ctx.fillStyle="#86a66b";
  ctx.fillRect(0,horizon,W,H-horizon);
 
- // Rua e calçadas fixas, desenhadas sobre o terreno verde.
+ // Rua e calçadas, fixas no mundo.
  const strips=[[-5.4,-3.65,"#c5beb2"],[-3.65,3.65,"#55575a"],[3.65,5.4,"#c5beb2"]];
- for(let z=-100;z<270;z+=1.1){
+
+ for(let z=-100;z<270;z+=2.2){
    for(const [l,r,col] of strips){
-     const p1=proj(l,z),p2=proj(r,z),p3=proj(r,z+1.1),p4=proj(l,z+1.1);
+     const p1=proj(l,z),p2=proj(r,z),p3=proj(r,z+2.2),p4=proj(l,z+2.2);
      if(p1&&p2&&p3&&p4)poly([p1,p2,p3,p4],col);
    }
  }
 
- // Guias das calçadas.
  for(const x of [-3.65,3.65]){
    for(let z=-100;z<270;z+=1.5){
      const p1=proj(x,z),p2=proj(x,z+1.5);
@@ -76,13 +76,11 @@ function ground(){
    }
  }
 
- // Faixa central.
  for(let z=-100;z<270;z+=8){
    const p1=proj(-.08,z),p2=proj(.08,z),p3=proj(.08,z+3.4),p4=proj(-.08,z+3.4);
    if(p1&&p2&&p3&&p4)poly([p1,p2,p3,p4],"#e3d36c");
  }
 
- // Bordas das calçadas.
  for(let z=-100;z<270;z+=8){
    let p1=proj(-5.35,z),p2=proj(-3.7,z);
    if(p1&&p2)line([p1,p2],"#aaa59b",.7);
