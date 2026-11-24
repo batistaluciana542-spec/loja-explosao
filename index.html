@@ -13,7 +13,7 @@ const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");
 let W=innerWidth,H=innerHeight,D=1;
 function resize(){W=innerWidth;H=innerHeight;D=Math.min(devicePixelRatio||1,2);canvas.width=W*D;canvas.height=H*D;ctx.setTransform(D,0,0,D,0,0)}addEventListener("resize",resize);resize();
 
-const C={x:0,z:-1,yaw:0,pitch:0};
+const C={x:0,z:-1,yaw:0,pitch:0,cameraH:1.65};
 let jx=0,jy=0,drag=false,lx=0,ly=0,last=performance.now();
 
 const houses=[
@@ -37,7 +37,7 @@ function proj(x,z,h=0){
  const focal=Math.min(W,H)*.92;
  const pitchF=Math.sin(C.pitch)*focal;
  const pitchC=Math.cos(C.pitch);
- const vertical=(h)*pitchC-q.f*Math.sin(C.pitch);
+ const vertical=(h-C.cameraH)*pitchC-q.f*Math.sin(C.pitch);
  const depth=q.f*pitchC+h*Math.sin(C.pitch);
  if(depth<=.25)return null;
  const scale=focal/depth;
