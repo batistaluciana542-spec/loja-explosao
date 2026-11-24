@@ -79,39 +79,51 @@ function ground(){
    telhado de duas águas, porta recuada visualmente, janelas com moldura,
    muro frontal e pequeno jardim. Nada de fachada solta. */
 function house(h){
- const x1=h.x-h.w/2,x2=h.x+h.w/2,z1=h.z-h.d/2,z2=h.z+h.d/2,wallH=h.h,roofH=h.h+.95;
+ const x1=h.x-h.w/2,x2=h.x+h.w/2,z1=h.z-h.d/2,z2=h.z+h.d/2,wallH=h.h,roofH=h.h+.72;
  const A=proj(x1,z1,0),B=proj(x2,z1,0),C0=proj(x2,z2,0),D0=proj(x1,z2,0);
  const A1=proj(x1,z1,wallH),B1=proj(x2,z1,wallH),C1=proj(x2,z2,wallH),D1=proj(x1,z2,wallH);
- if(!A||!B||!C0||!D0||!A1||!B1||!C1||!D1)return;
- const ridgeF=proj(h.x,z1,roofH),ridgeB=proj(h.x,z2,roofH);
- /* paredes */
+ const RF=proj(h.x,z1,roofH),RB=proj(h.x,z2,roofH);
+ if(!A||!B||!C0||!D0||!A1||!B1||!C1||!D1||!RF||!RB)return;
+
+ /* Corpo: quatro faces fechadas. */
  poly([A,B,B1,A1],h.wall);
  poly([B,C0,C1,B1],h.side);
- poly([D0,A,A1,D1],shade(h.side,-12));
- poly([C0,D0,D1,C1],shade(h.side,-22));
- /* beirais */
- const e1=proj(x1-.16,z1-.12,wallH),e2=proj(x2+.16,z1-.12,wallH);
- poly([A1,B1,e2,e1],shade(h.roof,-8));
- /* telhado de duas águas */
- poly([A1,B1,ridgeF],h.roof);
- poly([D1,C1,ridgeB],shade(h.roof,-10));
- poly([A1,D1,ridgeB,ridgeF],shade(h.roof,-6));
- poly([B1,C1,ridgeB,ridgeF],shade(h.roof,-18));
+ poly([C0,D0,D1,C1],shade(h.side,-16));
+ poly([D0,A,A1,D1],shade(h.wall,-24));
 
- /* porta frontal e duas janelas. Elas são pintadas sobre a parede, sem buracos. */
- let door=proj(h.x,z1-.025,1.05);
- if(door){ctx.fillStyle=h.door;ctx.fillRect(door.x-door.s*.075,door.y-door.s*.24,door.s*.15,door.s*.48);ctx.strokeStyle="#2d211c";ctx.lineWidth=Math.max(1,door.s*.018);ctx.strokeRect(door.x-door.s*.075,door.y-door.s*.24,door.s*.15,door.s*.48)}
- for(const off of [-h.w*.29,h.w*.29]){
-  let q=proj(h.x+off,z1-.035,2.0);
-  if(q){let ww=q.s*.15,hh=q.s*.13;ctx.fillStyle=h.win;ctx.fillRect(q.x-ww/2,q.y-hh/2,ww,hh);ctx.strokeStyle="#514c47";ctx.lineWidth=Math.max(1,q.s*.02);ctx.strokeRect(q.x-ww/2,q.y-hh/2,ww,hh);line([{x:q.x,y:q.y-hh/2},{x:q.x,y:q.y+hh/2}],"#596b6d",Math.max(1,q.s*.012));line([{x:q.x-ww/2,y:q.y},{x:q.x+ww/2,y:q.y}],"#596b6d",Math.max(1,q.s*.012))}
+ /* Telhado simples e fechado, sem faces cruzadas. */
+ poly([A1,B1,RF],h.roof);
+ poly([B1,C1,RB,RF],shade(h.roof,-12));
+ poly([C1,D1,RB],shade(h.roof,-18));
+ poly([D1,A1,RF,RB],shade(h.roof,-7));
+
+ /* Porta frontal */
+ const door=proj(h.x,z1-.018,1.05);
+ if(door){
+   const dw=door.s*.16,dh=door.s*.47;
+   ctx.fillStyle=h.door;ctx.fillRect(door.x-dw/2,door.y-dh/2,dw,dh);
+   ctx.strokeStyle="#30221d";ctx.lineWidth=Math.max(1,door.s*.018);
+   ctx.strokeRect(door.x-dw/2,door.y-dh/2,dw,dh);
+   ctx.fillStyle="#c6a35c";ctx.beginPath();ctx.arc(door.x+dw*.28,door.y,Math.max(1.5,door.s*.012),0,Math.PI*2);ctx.fill();
  }
- /* muro baixo e canteiro */
- let ml=proj(x1-.75,z1-.75,.65),mr=proj(x2+.75,z1-.75,.65),mll=proj(x1-.75,z1-.15,0),mrr=proj(x2+.75,z1-.15,0);
- poly([mll,mrr,mr,ml],shade(h.wall,-28));
- let g1=proj(x1-.72,z1-.78,.68),g2=proj(x2+.72,z1-.78,.68);
- if(g1&&g2){ctx.strokeStyle="#6d5945";ctx.lineWidth=Math.max(1,g1.s*.02);ctx.strokeRect(Math.min(g1.x,g2.x),Math.min(g1.y,g2.y),Math.abs(g2.x-g1.x),Math.max(2,g1.s*.12))}
-}
 
+ /* Janelas frontais, dimensionadas pela mesma profundidade da parede. */
+ for(const off of [-h.w*.28,h.w*.28]){
+   const q=proj(h.x+off,z1-.02,2.0);
+   if(!q)continue;
+   const ww=q.s*.16,hh=q.s*.13;
+   ctx.fillStyle=h.win;ctx.fillRect(q.x-ww/2,q.y-hh/2,ww,hh);
+   ctx.strokeStyle="#4b4b47";ctx.lineWidth=Math.max(1,q.s*.018);
+   ctx.strokeRect(q.x-ww/2,q.y-hh/2,ww,hh);
+   line([{x:q.x,y:q.y-hh/2},{x:q.x,y:q.y+hh/2}],"#53686c",Math.max(1,q.s*.01));
+   line([{x:q.x-ww/2,y:q.y},{x:q.x+ww/2,y:q.y}],"#53686c",Math.max(1,q.s*.01));
+ }
+
+ /* Pequeno muro frontal separado do volume da casa. */
+ const mx1=x1-.55,mx2=x2+.55,mz=z1-.55;
+ const m1=proj(mx1,mz,0),m2=proj(mx2,mz,0),m3=proj(mx2,mz,.58),m4=proj(mx1,mz,.58);
+ poly([m1,m2,m3,m4],shade(h.wall,-30));
+}
 function tree(x,z){
  let b=proj(x,z,0),t=proj(x,z,2.9);if(!b||!t)return;
  line([b,t],"#60472f",Math.max(2,b.s*.055));
