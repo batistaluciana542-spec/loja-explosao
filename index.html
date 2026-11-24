@@ -44,7 +44,7 @@ input,button{font:inherit;border:1px solid #55eaff55;border-radius:12px;backgrou
 </div>
 <div id="mobile"><div class="stick"><button class="u" data-k="w">▲</button><button class="d" data-k="s">▼</button><button class="l" data-k="a">◀</button><button class="r" data-k="d">▶</button></div><button class="mine" id="mmine">⛏</button><button class="fire" id="mfire">⚡</button></div>
 
-<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 const root=document.getElementById('game');
@@ -122,7 +122,10 @@ function begin(){
  player.name=document.getElementById('name').value.trim()||'Explorador';
  document.getElementById('pname').textContent=player.name;document.getElementById('menu').style.display='none';document.getElementById('hud').style.display='block';playing=true;addMsg('🌎 Você entrou no mundo 3D.');renderer.domElement.requestPointerLock?.();
 }
-document.getElementById('play').onclick=begin;document.getElementById('create').onclick=()=>{createRoom();begin()};document.getElementById('join').onclick=()=>{joinRoom();begin()};
+function safeBegin(){try{begin()}catch(err){console.error(err);alert('O jogo encontrou um erro ao iniciar. Recarregue a página e tente novamente.')}} 
+document.getElementById('play').addEventListener('click',safeBegin);
+document.getElementById('create').addEventListener('click',()=>{try{createRoom();safeBegin()}catch(err){console.error(err);safeBegin()}});
+document.getElementById('join').addEventListener('click',()=>{try{joinRoom();safeBegin()}catch(err){console.error(err);safeBegin()}});
 addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(e.code==='Space'){e.preventDefault();mineTarget()}});
 addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
 renderer.domElement.addEventListener('click',()=>{if(playing)renderer.domElement.requestPointerLock?.()});
@@ -145,7 +148,7 @@ document.getElementById('send').onclick=sendChat;document.getElementById('chatin
 function sendChat(){const inp=document.getElementById('chatin');const text=inp.value.trim();if(!text)return;addMsg('Você: '+text);broadcast({type:'chat',name:player.name,text});inp.value=''}
 document.getElementById('bag').onclick=()=>{const i=document.getElementById('inv');i.style.display=i.style.display==='block'?'none':'block';updateUI()};
 document.getElementById('save').onclick=()=>{localStorage.setItem('neon3d',JSON.stringify({player,seed}));addMsg('💾 Progresso salvo neste aparelho.')};
-document.getElementById('build').onclick=()=>{if(player.inv.stone<1){addMsg('⛏ Você precisa de pedra.');return}const dir=new THREE.Vector3(0,0,-1).applyEuler(new THREE.Euler(player.pitch,player.yaw,0,'YXZ'));const p=camera.position.clone().add(dir.multiplyScalar(4));const bx=Math.floor(p.x),by=Math.floor(p.y),bz=Math.floor(p.z);if(!blockMap.has(key(bx,by,bz))){addBlock(bx,by,bz,'stone');player.inv.stone--;updateUI();broadcast({type:'add',x:bx,y:by,z:bz,type:'stone'})}};
+document.getElementById('build').onclick=()=>{if(player.inv.stone<1){addMsg('⛏ Você precisa de pedra.');return}const dir=new THREE.Vector3(0,0,-1).applyEuler(new THREE.Euler(player.pitch,player.yaw,0,'YXZ'));const p=camera.position.clone().add(dir.multiplyScalar(4));const bx=Math.floor(p.x),by=Math.floor(p.y),bz=Math.floor(p.z);if(!blockMap.has(key(bx,by,bz))){addBlock(bx,by,bz,'stone');player.inv.stone--;updateUI();broadcast({type:'add',x:bx,y:by,z:bz,blockType:'stone'})}};
 function move(dt){
  let dx=0,dz=0;if(keys.w||keys.arrowup)dz-=1;if(keys.s||keys.arrowdown)dz+=1;if(keys.a||keys.arrowleft)dx-=1;if(keys.d||keys.arrowright)dx+=1;
  if(dx||dz){const l=Math.hypot(dx,dz);dx/=l;dz/=l;const sy=Math.sin(player.yaw),cy=Math.cos(player.yaw);const vx=dx*cy-dz*sy,vz=dx*sy+dz*cy;player.x+=vx*player.speed*dt;player.z+=vz*player.speed*dt}
