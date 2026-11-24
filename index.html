@@ -92,19 +92,12 @@ function ground(){
    telhado de duas águas, porta recuada visualmente, janelas com moldura,
    muro frontal e pequeno jardim. Nada de fachada solta. */
 function house(h){
- const x1=h.x-h.w/2,x2=h.x+h.w/2,z1=h.z-h.d/2,z2=h.z+h.d/2;
- const Hh=h.h,roofH=Hh+.72;
+ const x1=h.x-h.w/2,x2=h.x+h.w/2,z1=h.z-h.d/2,z2=h.z+h.d/2,Hh=h.h,roofH=Hh+.72;
  function hp(x,z,y=0){return proj(x,z,y)}
- function P(points,fill,stroke){
-   if(points.some(p=>!p))return;
-   poly(points,fill);
-   if(stroke)line([...points,points[0]],stroke,Math.max(1,(points[0].s||1)*.01));
- }
- const q=cam(h.x,h.z);
- const front=q.f>=0;
- const fz=front?z1-.03:z2+.03;
+ function P(p,f){if(p.some(v=>!v))return;poly(p,f)}
+ const q=cam(h.x,h.z),front=q.f>=0,fz=front?z1-.03:z2+.03;
 
- // Corpo 3D: somente as faces necessárias, sem dezenas de objetos.
+ // Volume fechado. Apenas quatro faces + telhado.
  const A=hp(x1,z1,0),B=hp(x2,z1,0),C=hp(x2,z2,0),D=hp(x1,z2,0);
  const E=hp(x1,z1,Hh),F=hp(x2,z1,Hh),G=hp(x2,z2,Hh),I=hp(x1,z2,Hh);
  const fs=[
@@ -115,44 +108,22 @@ function house(h){
  ];
  fs.sort((u,v)=>v.d-u.d).forEach(f=>P(f.p,f.c));
 
- // Telhado simples, sólido e realmente tridimensional.
- const e=.3;
- const r1=hp(x1-e,z1-e,Hh),r2=hp(x2+e,z1-e,Hh),r3=hp(h.x,z1-e,roofH);
+ const e=.3,r1=hp(x1-e,z1-e,Hh),r2=hp(x2+e,z1-e,Hh),r3=hp(h.x,z1-e,roofH);
  const r4=hp(x2+e,z2+e,Hh),r5=hp(h.x,z2+e,roofH),r6=hp(x1-e,z2+e,Hh);
- P([r1,r2,r3],shade(h.roof,10));
- P([r3,r2,r4,r5],h.roof);
- P([r6,r5,r3,r1],shade(h.roof,-18));
- P([r5,r4,r6],shade(h.roof,-8));
+ P([r1,r2,r3],shade(h.roof,10));P([r3,r2,r4,r5],h.roof);
+ P([r6,r5,r3,r1],shade(h.roof,-18));P([r5,r4,r6],shade(h.roof,-8));
 
- // Fachada única, limpa e legível.
- P([hp(x1,fz,0),hp(x2,fz,0),hp(x2,fz,Hh),hp(x1,fz,Hh)],h.wall,shade(h.trim,-25));
+ // Fachada frontal simples, sem loops ou objetos extras.
+ P([hp(x1,fz,0),hp(x2,fz,0),hp(x2,fz,Hh),hp(x1,fz,Hh)],h.wall);
 
- // Porta e duas janelas grandes.
  const dx=h.x-.82;
- const door=[hp(dx-.45,fz,0.2),hp(dx+.45,fz,0.2),hp(dx+.45,fz,1.92),hp(dx-.45,fz,1.92)];
- P(door,h.door,shade(h.trim,-30));
+ P([hp(dx-.45,fz-.01,.2),hp(dx+.45,fz-.01,.2),hp(dx+.45,fz-.01,1.92),hp(dx-.45,fz-.01,1.92)],h.door);
 
  function win(cx,cy,w,hh){
-   const o=[hp(cx-w/2,fz-.01,cy-hh/2),hp(cx+w/2,fz-.01,cy-hh/2),hp(cx+w/2,fz-.01,cy+hh/2),hp(cx-w/2,fz-.01,cy+hh/2)];
-   P(o,h.trim);
-   const i=[hp(cx-w/2+.08,fz-.02,cy-hh/2+.08),hp(cx+w/2-.08,fz-.02,cy-hh/2+.08),hp(cx+w/2-.08,fz-.02,cy+hh/2-.08),hp(cx-w/2+.08,fz-.02,cy+hh/2-.08)];
-   P(i,h.win);
-   line([hp(cx,fz-.025,cy-hh/2+.1),hp(cx,fz-.025,cy+hh/2-.1)],shade(h.trim,-40),2);
-   line([hp(cx-w/2+.1,fz-.025,cy),hp(cx+w/2-.1,fz-.025,cy)],shade(h.trim,-40),2);
+   P([hp(cx-w/2,fz-.02,cy-hh/2),hp(cx+w/2,fz-.02,cy-hh/2),hp(cx+w/2,fz-.02,cy+hh/2),hp(cx-w/2,fz-.02,cy+hh/2)],h.trim);
+   P([hp(cx-w/2+.08,fz-.025,cy-hh/2+.08),hp(cx+w/2-.08,fz-.025,cy-hh/2+.08),hp(cx+w/2-.08,fz-.025,cy+hh/2-.08),hp(cx-w/2+.08,fz-.025,cy+hh/2-.08)],h.win);
  }
- win(h.x+.92,2.05,1.35,.9);
- win(h.x-2.05,2.0,1.05,.82);
-
- // Pequena marquise.
- const mx=dx;
- P([hp(mx-.55,fz-.18,1.95),hp(mx+.55,fz-.18,1.95),hp(mx+.48,fz-.38,2.08),hp(mx-.48,fz-.38,2.08)],shade(h.roof,-5));
-
- // Muro baixo e portão, sem objetos repetitivos.
- const mz=fz+(front?-.65:.65);
- P([hp(x1-.25,mz,0),hp(h.x-1.5,mz,0),hp(h.x-1.5,mz,.52),hp(x1-.25,mz,.52)],shade(h.wall,-28),h.trim);
- P([hp(h.x+1.5,mz,0),hp(x2+.25,mz,0),hp(x2+.25,mz,.52),hp(h.x+1.5,mz,.52)],shade(h.wall,-28),h.trim);
- const gx=h.x+1.9;
- P([hp(gx-.55,mz,.05),hp(gx+.55,mz,.05),hp(gx+.55,mz,1.15),hp(gx-.55,mz,1.15)],h.gate||"#4e4b47","#292827");
+ win(h.x+.92,2.05,1.35,.9);win(h.x-2.05,2.0,1.05,.82);
 }
 function tree(x,z){
  const base=proj(x,z,0), trunkTop=proj(x,z,3.0);
