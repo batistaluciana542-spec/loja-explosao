@@ -155,8 +155,8 @@ function house(h){
  });
  for(const f of roofFaces)poly(f.pts,f.fill);
 
- // Fachada mais próxima. Os detalhes também usam hp(), então não
- // desaparecem quando uma quina passa perto do plano da câmera.
+ // Fachada mais próxima. Os detalhes ficam sobre uma parede
+ // completa, para a casa nunca parecer vazada do lado do jogador.
  const q=cam(h.x,h.z);
  const front=q.f>=0;
  const facadeZ=front?z1-.012:z2+.012;
