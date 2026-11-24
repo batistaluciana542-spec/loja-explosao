@@ -31,7 +31,7 @@ const poles=[[-4.0,4],[-4.0,19],[-4.0,34],[-4.0,49],[4.0,12],[4.0,28],[4.0,44],[
 
 function shade(hex,n){let v=parseInt(hex.slice(1),16),r=Math.max(0,Math.min(255,(v>>16)+n)),g=Math.max(0,Math.min(255,((v>>8)&255)+n)),b=Math.max(0,Math.min(255,(v&255)+n));return "#"+[r,g,b].map(x=>x.toString(16).padStart(2,"0")).join("")}
 function cam(x,z){let dx=x-C.x,dz=z-C.z,co=Math.cos(C.yaw),si=Math.sin(C.yaw);return{f:dx*si+dz*co,s:dx*co-dz*si}}
-function proj(x,z,h=0){let q=cam(x,z);if(q.f<.35)return null;let focal=Math.min(W,H)*.92,scale=focal/q.f;return{x:W/2+q.s*scale,y:H*.53-(h-C.pitch*3)*scale,s:scale,d:q.f}}
+function proj(x,z,h=0){let q=cam(x,z);if(q.f<.35)return null;let focal=Math.min(W,H)*.92,scale=focal/q.f;return{x:W/2+q.s*scale,y:H*.53+C.pitch*H-h*scale,s:scale,d:q.f}}
 function poly(points,fill){if(points.some(p=>!p))return;ctx.fillStyle=fill;ctx.beginPath();ctx.moveTo(points[0].x,points[0].y);for(let i=1;i<points.length;i++)ctx.lineTo(points[i].x,points[i].y);ctx.closePath();ctx.fill()}
 function line(points,stroke,width=1){if(points.some(p=>!p))return;ctx.strokeStyle=stroke;ctx.lineWidth=width;ctx.beginPath();ctx.moveTo(points[0].x,points[0].y);for(let i=1;i<points.length;i++)ctx.lineTo(points[i].x,points[i].y);ctx.stroke()}
 
@@ -40,7 +40,7 @@ function line(points,stroke,width=1){if(points.some(p=>!p))return;ctx.strokeStyl
    como superfícies independentes, sempre abaixo do horizonte. */
 function ground(){
  ctx.fillStyle="#9bd0ea";ctx.fillRect(0,0,W,H);
- const horizon=Math.max(0,Math.min(H,H*.53-C.pitch*3));
+ const horizon=Math.max(0,Math.min(H,H*.53+C.pitch*H));
  ctx.fillStyle="#86a66b";ctx.fillRect(0,horizon,W,H-horizon);
 
  const strips=[[-5.4,-3.65,"#c5beb2"],[-3.65,3.65,"#55575a"],[3.65,5.4,"#c5beb2"]];
