@@ -129,13 +129,26 @@ function house(h){
  });
  for(const f of faces)poly(f.ids.map(id=>p[id]),f.fill);
 
- // Parede lateral voltada para a rua: as casas ficam fora da calçada,
- // então esta lateral precisa existir como uma face sólida independente.
- // Ela é desenhada antes do teto e dos detalhes para não apagar porta/janelas.
+ // PAREDE DA CASA VOLTADA PARA A RUA.
+// Esta lateral tem espessura real, para não parecer que a casa está
+// aberta ou sem parede quando vista do meio da rua.
  const streetX = h.x < 0 ? x2 : x1;
  const streetSide = h.x < 0 ? shade(h.side,-6) : h.side;
+ const thickness = h.x < 0 ? .16 : -.16;
+ const outerX = streetX + thickness;
+
  const sw1=hp(streetX,z1,0),sw2=hp(streetX,z2,0),sw3=hp(streetX,z2,Hh),sw4=hp(streetX,z1,Hh);
+ const ow1=hp(outerX,z1,0),ow2=hp(outerX,z2,0),ow3=hp(outerX,z2,Hh),ow4=hp(outerX,z1,Hh);
+
+ // Face inteira da parede.
  poly([sw1,sw2,sw3,sw4],streetSide);
+
+ // Espessura nas duas pontas da parede.
+ poly([sw1,ow1,ow4,sw4],shade(streetSide,-14));
+ poly([sw2,ow2,ow3,sw3],shade(streetSide,8));
+
+ // Linha externa discreta para marcar a quina 3D.
+ line([ow1,ow2,ow3,ow4,ow1],shade(streetSide,-28),Math.max(1.2,sw1.s*.018));
 
  // PROJEÇÃO PRÓPRIA DO TETO
  // O telhado não usa mais a projeção das paredes. Cada vértice é
