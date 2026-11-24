@@ -119,12 +119,12 @@ function house(h){
   {ids:[1,2,6,5],fill:h.side},
   {ids:[2,3,7,6],fill:shade(h.side,-22)},
   {ids:[3,0,4,7],fill:shade(h.side,-16)},
-  // Telhado simplificado: somente as duas águas principais.
-  // Isso evita cruzamentos e triângulos que causavam o teto "quebrado".
+  // Telhado dividido em faces independentes e ordenado junto com a casa.
+  // Cada água mantém volume e não desaparece quando a câmera fica de frente.
   {ids:[4,5,8],fill:shade(h.roof,4)},
-  {ids:[8,5,6,9],fill:h.roof},
-  {ids:[7,4,8],fill:shade(h.roof,-10)},
-  {ids:[9,6,7],fill:shade(h.roof,-14)}
+  {ids:[5,6,9,8],fill:h.roof},
+  {ids:[6,7,9],fill:shade(h.roof,-10)},
+  {ids:[7,4,8],fill:shade(h.roof,-14)}
  ];
 
  // Painter's algorithm por face, sempre desenhando todas as faces.
