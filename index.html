@@ -54,66 +54,38 @@ function ground(){
  const horizon=Math.max(0,Math.min(H,H*.53+Math.sin(C.pitch)*Math.min(W,H)*.92));
  ctx.fillStyle="#86a66b";ctx.fillRect(0,horizon,W,H-horizon);
 
- // Chão infinito visual: desenha a rua e as calçadas em ambos os sentidos
- // do eixo da rua, usando profundidade absoluta para que nada desapareça
- // simplesmente porque ficou atrás da câmera.
- function gp(x,z){
-   const q=cam(x,z);
-   const focal=Math.min(W,H)*.92;
-   const pc=Math.cos(C.pitch);
-   const depth=Math.max(Math.abs(q.f)*pc,.22);
-   const scale=focal/depth;
-   const vertical=(-C.cameraH)*pc-Math.abs(q.f)*Math.sin(C.pitch);
-   return {x:W/2+q.s*scale,y:H*.53-vertical*scale,s:scale,d:Math.abs(q.f)};
- }
- function gpoly(points,fill){
-   ctx.fillStyle=fill;
-   ctx.beginPath();ctx.moveTo(points[0].x,points[0].y);
-   for(let i=1;i<points.length;i++)ctx.lineTo(points[i].x,points[i].y);
-   ctx.closePath();ctx.fill();
- }
+ const strips=[[-5.4,-3.65,"#c5beb2"],[-3.65,3.65,"#55575a"],[3.65,5.4,"#c5beb2"]];
 
- // Duas regiões enormes de asfalto/calçada. Elas são redesenhadas
- // ao redor da posição atual, portanto não existe um "fim" para trás.
- const ranges=[C.z-220,C.z+220];
- for(const dir of [-1,1]){
-   let z0=C.z+.5*dir;
-   for(let i=0;i<100;i++){
-     const z1=z0+i*2.2*dir;
-     const z2=z1+2.2*dir;
-     for(const [l,r,col] of [
-       [-5.4,-3.65,"#c5beb2"],
-       [-3.65,3.65,"#55575a"],
-       [3.65,5.4,"#c5beb2"]
-     ]){
-       gpoly([gp(l,z1),gp(r,z1),gp(r,z2),gp(l,z2)],col);
-     }
+ // O chão existe para os dois lados da posição do jogador, mas cada
+ // trecho só é desenhado quando está na frente da câmera. Assim não há
+ // duplicação nem sobreposição quando o jogador olha para trás.
+ for(let z=C.z-220;z<C.z+220;z+=2.2){
+   for(const [l,r,col] of strips){
+     const a=proj(l,z),b=proj(r,z),c1=proj(r,z+2.2),d=proj(l,z+2.2);
+     if(a&&b&&c1&&d)poly([a,b,c1,d],col);
    }
  }
 
- // Bordas da rua nos dois sentidos.
+ // Bordas somente dos trechos visíveis.
  for(const x of [-3.65,3.65]){
-   for(const dir of [-1,1]){
-     let p1=gp(x,C.z+.8*dir),p2=gp(x,C.z+220*dir);
-     line([p1,p2],"#8b8d8d",1);
+   for(let z=C.z-220;z<C.z+220;z+=1.5){
+     const a=proj(x,z),b=proj(x,z+1.5);
+     if(a&&b)line([a,b],"#8b8d8d",1);
    }
  }
 
- // Faixa central nos dois sentidos.
- for(const dir of [-1,1]){
-   for(let i=1;i<28;i++){
-     const z=C.z+dir*(5+i*8);
-     gpoly([gp(-.08,z),gp(.08,z),gp(.08,z+dir*3.4),gp(-.08,z+dir*3.4)],"#e3d36c");
-   }
+ // Faixa central, nos dois sentidos, sem duplicar.
+ for(let z=C.z-220;z<C.z+220;z+=8){
+   const a=proj(-.08,z),b=proj(.08,z),c1=proj(.08,z+3.4),d=proj(-.08,z+3.4);
+   if(a&&b&&c1&&d)poly([a,b,c1,d],"#e3d36c");
  }
 
- // Juntas das calçadas nos dois sentidos.
- for(const dir of [-1,1]){
-   for(let i=1;i<28;i++){
-     const z=C.z+dir*(7+i*8);
-     line([gp(-5.35,z),gp(-3.7,z)],"#aaa59b",.7);
-     line([gp(3.7,z),gp(5.35,z)],"#aaa59b",.7);
-   }
+ // Juntas das calçadas.
+ for(let z=C.z-220;z<C.z+220;z+=8){
+   let a=proj(-5.35,z),b=proj(-3.7,z);
+   if(a&&b)line([a,b],"#aaa59b",.7);
+   a=proj(3.7,z);b=proj(5.35,z);
+   if(a&&b)line([a,b],"#aaa59b",.7);
  }
 }
 /* NOVAS CASAS: cada casa é um volume fechado com quatro paredes, beiral,
