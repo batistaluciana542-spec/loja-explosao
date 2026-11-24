@@ -159,12 +159,38 @@ function house(h){
    P([hp(px-1,zz,yy),hp(px+1,zz,yy),hp(px+1,zz,yy+.09),hp(px-1,zz,yy+.09)],shade(h.trim,4));
  }
 
- // Muro frontal separado, com pilares e profundidade.
+ // Elementos da frente com volume próprio: muro, portão e pilares.
  const mz2=fz+(front?-.62:.62);
- P([hp(x1-.25,mz2,0),hp(h.x-1.55,mz2,0),hp(h.x-1.55,mz2,.55),hp(x1-.25,mz2,.55)],shade(h.wall,-30),h.trim);
- P([hp(h.x+1.55,mz2,0),hp(x2+.25,mz2,0),hp(x2+.25,mz2,.55),hp(h.x+1.55,mz2,.55)],shade(h.wall,-30),h.trim);
+ const muroBack=mz2+(front?.30:-.30);
+ // Muro esquerdo e direito com topo e laterais, não uma folha plana.
+ function wallBlock(a,b){
+   P([hp(a,mz2,0),hp(b,mz2,0),hp(b,mz2,.55),hp(a,mz2,.55)],shade(h.wall,-30),h.trim);
+   P([hp(a,mz2,.55),hp(b,mz2,.55),hp(b,muroBack,.55),hp(a,muroBack,.55)],shade(h.trim,-8),shade(h.trim,-35));
+   P([hp(a,mz2,0),hp(a,muroBack,0),hp(a,muroBack,.55),hp(a,mz2,.55)],shade(h.wall,-42));
+   P([hp(b,muroBack,0),hp(b,mz2,0),hp(b,mz2,.55),hp(b,muroBack,.55)],shade(h.wall,-48));
+ }
+ wallBlock(x1-.25,h.x-1.55);
+ wallBlock(h.x+1.55,x2+.25);
+
+ // Pilares grossos, com base, corpo e topo projetado.
  for(const xx of [x1-.08,x2+.08]){
-   P([hp(xx-.09,mz2,.42),hp(xx+.09,mz2,.42),hp(xx+.09,mz2,1.5),hp(xx-.09,mz2,1.5)],shade(h.trim,-22),shade(h.trim,-42));
+   const pb=mz2+(front?-.22:.22), pt=mz2+(front?-.26:.26);
+   P([hp(xx-.11,pb,.18),hp(xx+.11,pb,.18),hp(xx+.11,pb,1.5),hp(xx-.11,pb,1.5)],shade(h.trim,-22),shade(h.trim,-42));
+   P([hp(xx-.16,pt,1.5),hp(xx+.16,pt,1.5),hp(xx+.16,pt,1.64),hp(xx-.16,pt,1.64)],shade(h.trim,4),shade(h.trim,-35));
+   P([hp(xx-.16,pt,.18),hp(xx+.16,pt,.18),hp(xx+.11,pb,.18),hp(xx-.11,pb,.18)],shade(h.trim,-12));
+ }
+
+ // Portão/jardineira realmente espesso, com barras separadas em 3D.
+ const gx=h.x+1.95,gz=fz+(front?-.10:.10),gb=gz+(front?.20:-.20);
+ const gateCol=(h.style===0||h.style===3)?(h.gate||"#4e4b47"):"#714b36";
+ P([hp(gx-.62,gz,.08),hp(gx+.62,gz,.08),hp(gx+.62,gz,1.12),hp(gx-.62,gz,1.12)],gateCol,shade(h.trim,-35));
+ P([hp(gx-.62,gb,.08),hp(gx+.62,gb,.08),hp(gx+.62,gb,1.12),hp(gx-.62,gb,1.12)],shade(gateCol,-18));
+ P([hp(gx-.62,gz,.08),hp(gx-.62,gb,.08),hp(gx-.62,gb,1.12),hp(gx-.62,gz,1.12)],shade(gateCol,-28));
+ P([hp(gx+.62,gb,.08),hp(gx+.62,gz,.08),hp(gx+.62,gz,1.12),hp(gx+.62,gb,1.12)],shade(gateCol,-35));
+ for(const xx of [gx-.48,gx-.24,gx,gx+.24,gx+.48]){
+   const p1=hp(xx,gz,0.14),p2=hp(xx,gz,1.06),p3=hp(xx,gb,1.06);
+   if(p1&&p2)line([p1,p2],shade(h.trim,-42),Math.max(2,(p1.s||1)*.018));
+   if(p2&&p3)line([p2,p3],shade(h.trim,-55),Math.max(1,(p2.s||1)*.012));
  }
 
  // Detalhe superior que varia por casa, para quebrar o aspecto de bloco.
@@ -175,10 +201,8 @@ function house(h){
    for(const xx of [bx-1.05,bx,bx+1.05]) line([hp(xx,bz,.25),hp(xx,bz,2.3)],shade(h.trim,-30),Math.max(1,(hp(xx,bz,1)?.s||1)*.018));
  }
 
- // Jardineira/grade simples, com espessura.
- const gx=h.x+1.95,gz=fz+(front?-.10:.10);
- P([hp(gx-.62,gz,.08),hp(gx+.62,gz,.08),hp(gx+.62,gz,1.12),hp(gx-.62,gz,1.12)],h.style===0||h.style===3?(h.gate||"#4e4b47"):"#714b36",shade(h.trim,-35));
- const fl=hp(gx,gz+(front?-.03:.03),1.45);
+ // Vegetação acima do elemento frontal, sem alterar sua geometria.
+ const fl=hp(h.x+1.95,fz+(front?-.13:.13),1.45);
  if(fl){ctx.fillStyle="#56854b";ctx.beginPath();ctx.arc(fl.x,fl.y,Math.max(4,fl.s*.09),0,Math.PI*2);ctx.fill();}
 }
 function tree(x,z){
