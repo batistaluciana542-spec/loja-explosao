@@ -17,14 +17,14 @@ const C={x:0,z:-1,yaw:0,pitch:0,cameraH:2.35};
 let jx=0,jy=0,drag=false,lx=0,ly=0,last=performance.now();
 
 const houses=[
- {x:-7,z:8,w:5.3,d:7,h:3.4,wall:"#d7b08c",side:"#b78364",roof:"#754b3b",door:"#55382d",win:"#8fb9c4"},
- {x:-7,z:21,w:5.5,d:7.5,h:3.5,wall:"#c98b82",side:"#a86561",roof:"#654139",door:"#4b312b",win:"#9fc8d0"},
- {x:-7,z:35,w:5.1,d:7,h:3.6,wall:"#ddd8cf",side:"#bdb8af",roof:"#69574d",door:"#4d403a",win:"#8ebbc4"},
- {x:-7,z:49,w:5.4,d:7.3,h:3.5,wall:"#cbb49e",side:"#a68b78",roof:"#67483e",door:"#4e372e",win:"#a4c3c8"},
- {x:7,z:10,w:5.3,d:7,h:3.4,wall:"#d8c9aa",side:"#b6a27e",roof:"#705044",door:"#51392f",win:"#91b7bf"},
- {x:7,z:24,w:5.5,d:7.5,h:3.5,wall:"#d0a17d",side:"#aa795d",roof:"#67473b",door:"#4d342b",win:"#9bc0c6"},
- {x:7,z:38,w:5.1,d:7,h:3.6,wall:"#ddd9d0",side:"#bcb8ae",roof:"#6c5147",door:"#4d403a",win:"#91bac2"},
- {x:7,z:52,w:5.4,d:7.3,h:3.5,wall:"#d2b391",side:"#ad8d6d",roof:"#65483d",door:"#4c352d",win:"#a0c2c8"}
+ {x:-7,z:8,w:5.8,d:7.2,h:3.15,wall:"#d9c3a7",side:"#b99a78",roof:"#7a4b36",door:"#5a382b",win:"#9fc8d1",trim:"#eee4d4",gate:"#5b5148",style:0},
+ {x:-7,z:21,w:6.1,d:7.6,h:3.25,wall:"#e1b2a7",side:"#b97f78",roof:"#684033",door:"#56342c",win:"#a7cbd0",trim:"#f2ded7",gate:"#5c514b",style:1},
+ {x:-7,z:35,w:5.9,d:7.1,h:3.2,wall:"#e5e0d7",side:"#c3beb4",roof:"#66544b",door:"#514039",win:"#9fc5cb",trim:"#ffffff",gate:"#77716a",style:2},
+ {x:-7,z:49,w:6.2,d:7.5,h:3.15,wall:"#d5b898",side:"#b08f6d",roof:"#704632",door:"#52362b",win:"#a6c8cc",trim:"#eee0c8",gate:"#5d5146",style:3},
+ {x:7,z:10,w:5.8,d:7.2,h:3.15,wall:"#dfd2b7",side:"#bbaa89",roof:"#704634",door:"#50362d",win:"#9fc5ca",trim:"#f5ead5",gate:"#62584d",style:1},
+ {x:7,z:24,w:6.1,d:7.6,h:3.25,wall:"#d7a27d",side:"#b57d5f",roof:"#674334",door:"#50352b",win:"#a2c9cf",trim:"#f0d9c3",gate:"#5b5048",style:0},
+ {x:7,z:38,w:5.9,d:7.1,h:3.2,wall:"#dedbd3",side:"#bbb8b0",roof:"#695148",door:"#504039",win:"#a1c7cd",trim:"#f5f2eb",gate:"#6e6962",style:2},
+ {x:7,z:52,w:6.2,d:7.5,h:3.15,wall:"#d8b58f",side:"#b18c6c",roof:"#6c4434",door:"#51362c",win:"#a7c9ce",trim:"#f0dfca",gate:"#5e5248",style:3}
 ];
 const trees=[[-4.7,6],[-4.7,17],[-4.7,29],[-4.7,42],[-4.7,55],[4.7,12],[4.7,26],[4.7,40],[4.7,54]];
 const poles=[[-4.0,4],[-4.0,19],[-4.0,34],[-4.0,49],[4.0,12],[4.0,28],[4.0,44],[4.0,59]];
@@ -79,50 +79,95 @@ function ground(){
    telhado de duas águas, porta recuada visualmente, janelas com moldura,
    muro frontal e pequeno jardim. Nada de fachada solta. */
 function house(h){
- const x1=h.x-h.w/2,x2=h.x+h.w/2,z1=h.z-h.d/2,z2=h.z+h.d/2,wallH=h.h,roofH=h.h+.72;
+ const x1=h.x-h.w/2,x2=h.x+h.w/2,z1=h.z-h.d/2,z2=h.z+h.d/2;
+ const wallH=h.h, roofH=h.h+.82;
+
  const A=proj(x1,z1,0),B=proj(x2,z1,0),C0=proj(x2,z2,0),D0=proj(x1,z2,0);
  const A1=proj(x1,z1,wallH),B1=proj(x2,z1,wallH),C1=proj(x2,z2,wallH),D1=proj(x1,z2,wallH);
  const RF=proj(h.x,z1,roofH),RB=proj(h.x,z2,roofH);
  if(!A||!B||!C0||!D0||!A1||!B1||!C1||!D1||!RF||!RB)return;
 
- /* Corpo: quatro faces fechadas. */
+ // Corpo principal: volume fechado e simples, parecido com casas térreas de rua residencial.
  poly([A,B,B1,A1],h.wall);
  poly([B,C0,C1,B1],h.side);
- poly([C0,D0,D1,C1],shade(h.side,-16));
- poly([D0,A,A1,D1],shade(h.wall,-24));
+ poly([C0,D0,D1,C1],shade(h.side,-14));
+ poly([D0,A,A1,D1],shade(h.wall,-22));
 
- /* Telhado simples e fechado, sem faces cruzadas. */
+ // Faixa superior e beiral para quebrar o aspecto de caixa.
+ const e1=proj(x1-.08,z1-.12,wallH+.10),e2=proj(x2+.08,z1-.12,wallH+.10);
+ const e3=proj(x2+.08,z1-.12,wallH-.12),e4=proj(x1-.08,z1-.12,wallH-.12);
+ poly([e1,e2,e3,e4],h.trim);
+
+ // Telhado inclinado com cumeeira central.
  poly([A1,B1,RF],h.roof);
- poly([B1,C1,RB,RF],shade(h.roof,-12));
+ poly([B1,C1,RB,RF],shade(h.roof,-10));
  poly([C1,D1,RB],shade(h.roof,-18));
  poly([D1,A1,RF,RB],shade(h.roof,-7));
 
- /* Porta frontal */
- const door=proj(h.x,z1-.018,1.05);
+ // Frontão triangular visível acima da fachada.
+ poly([A1,B1,RF],shade(h.wall,-8));
+
+ // Porta + pequeno alpendre/recuo visual.
+ const door=proj(h.x-.55,z1-.035,1.18);
  if(door){
-   const dw=door.s*.16,dh=door.s*.47;
+   const dw=door.s*.19,dh=door.s*.53;
    ctx.fillStyle=h.door;ctx.fillRect(door.x-dw/2,door.y-dh/2,dw,dh);
-   ctx.strokeStyle="#30221d";ctx.lineWidth=Math.max(1,door.s*.018);
-   ctx.strokeRect(door.x-dw/2,door.y-dh/2,dw,dh);
-   ctx.fillStyle="#c6a35c";ctx.beginPath();ctx.arc(door.x+dw*.28,door.y,Math.max(1.5,door.s*.012),0,Math.PI*2);ctx.fill();
+   ctx.strokeStyle=shade(h.door,-25);ctx.lineWidth=Math.max(1,door.s*.018);ctx.strokeRect(door.x-dw/2,door.y-dh/2,dw,dh);
+   ctx.fillStyle="#c9a75e";ctx.beginPath();ctx.arc(door.x+dw*.28,door.y,Math.max(1.5,door.s*.012),0,Math.PI*2);ctx.fill();
+   const aw=dw*1.35,ah=door.s*.035;
+   ctx.fillStyle=shade(h.trim,-18);ctx.fillRect(door.x-aw/2,door.y-dh/2-ah*2,aw,ah);
  }
 
- /* Janelas frontais, dimensionadas pela mesma profundidade da parede. */
- for(const off of [-h.w*.28,h.w*.28]){
-   const q=proj(h.x+off,z1-.02,2.0);
-   if(!q)continue;
-   const ww=q.s*.16,hh=q.s*.13;
-   ctx.fillStyle=h.win;ctx.fillRect(q.x-ww/2,q.y-hh/2,ww,hh);
-   ctx.strokeStyle="#4b4b47";ctx.lineWidth=Math.max(1,q.s*.018);
-   ctx.strokeRect(q.x-ww/2,q.y-hh/2,ww,hh);
-   line([{x:q.x,y:q.y-hh/2},{x:q.x,y:q.y+hh/2}],"#53686c",Math.max(1,q.s*.01));
-   line([{x:q.x-ww/2,y:q.y},{x:q.x+ww/2,y:q.y}],"#53686c",Math.max(1,q.s*.01));
+ // Janela grande de sala.
+ const q1=proj(h.x+.72,z1-.04,1.95);
+ if(q1){
+   const ww=q1.s*.24,hh=q1.s*.18;
+   ctx.fillStyle=h.trim;ctx.fillRect(q1.x-ww/2-ww*.08,q1.y-hh/2-hh*.08,ww*1.16,hh*1.16);
+   ctx.fillStyle=h.win;ctx.fillRect(q1.x-ww/2,q1.y-hh/2,ww,hh);
+   ctx.strokeStyle="#596b6d";ctx.lineWidth=Math.max(1,q1.s*.014);
+   ctx.strokeRect(q1.x-ww/2,q1.y-hh/2,ww,hh);
+   line([{x:q1.x,y:q1.y-hh/2},{x:q1.x,y:q1.y+hh/2}], "#617376",Math.max(1,q1.s*.009));
+   line([{x:q1.x-ww/2,y:q1.y},{x:q1.x+ww/2,y:q1.y}], "#617376",Math.max(1,q1.s*.009));
  }
 
- /* Pequeno muro frontal separado do volume da casa. */
- const mx1=x1-.55,mx2=x2+.55,mz=z1-.55;
- const m1=proj(mx1,mz,0),m2=proj(mx2,mz,0),m3=proj(mx2,mz,.58),m4=proj(mx1,mz,.58);
- poly([m1,m2,m3,m4],shade(h.wall,-30));
+ // Segunda janela menor. O estilo muda de uma casa para outra.
+ const q2=proj(h.x-(h.w*.27),z1-.045,2.05);
+ if(q2){
+   const ww=q2.s*(h.style===2?.19:.16),hh=q2.s*.15;
+   ctx.fillStyle=h.trim;ctx.fillRect(q2.x-ww/2-ww*.07,q2.y-hh/2-hh*.07,ww*1.14,hh*1.14);
+   ctx.fillStyle=h.win;ctx.fillRect(q2.x-ww/2,q2.y-hh/2,ww,hh);
+   ctx.strokeStyle="#596b6d";ctx.lineWidth=Math.max(1,q2.s*.012);ctx.strokeRect(q2.x-ww/2,q2.y-hh/2,ww,hh);
+   line([{x:q2.x,y:q2.y-hh/2},{x:q2.x,y:q2.y+hh/2}], "#617376",Math.max(1,q2.s*.009));
+ }
+
+ // Garagem/portão em algumas casas, sem criar um bloco separado.
+ if(h.style===0||h.style===3){
+   const g=proj(h.x+.35,z1-.055,.92);
+   if(g){
+     const gw=g.s*.31,gh=g.s*.42;
+     ctx.fillStyle=h.gate;ctx.fillRect(g.x-gw/2,g.y-gh/2,gw,gh);
+     ctx.strokeStyle=shade(h.gate,-25);ctx.lineWidth=Math.max(1,g.s*.012);ctx.strokeRect(g.x-gw/2,g.y-gh/2,gw,gh);
+     for(let i=1;i<4;i++)line([{x:g.x-gw/2+gw*i/4,y:g.y-gh/2},{x:g.x-gw/2+gw*i/4,y:g.y+gh/2}],shade(h.gate,18),Math.max(1,g.s*.007));
+   }
+ }
+
+ // Muro baixo frontal com abertura central. Isso aproxima a fachada de uma casa real,
+ // sem transformar a casa em uma caixa flutuante.
+ const mz=z1-.62;
+ const mh=.58;
+ const leftEnd=h.x-.95,rightStart=h.x+.95;
+ const m1=proj(x1-.48,mz,0),m2=proj(leftEnd,mz,0),m3=proj(leftEnd,mz,mh),m4=proj(x1-.48,mz,mh);
+ const n1=proj(rightStart,mz,0),n2=proj(x2+.48,mz,0),n3=proj(x2+.48,mz,mh),n4=proj(rightStart,mz,mh);
+ poly([m1,m2,m3,m4],shade(h.wall,-25));
+ poly([n1,n2,n3,n4],shade(h.wall,-25));
+
+ // Pequenas colunas no portão.
+ for(const px of [leftEnd,rightStart]){
+   const p0=proj(px,mz,0),p1=proj(px,mz,.9);
+   if(p0&&p1){
+     ctx.strokeStyle=shade(h.wall,-35);ctx.lineWidth=Math.max(2,p0.s*.035);ctx.beginPath();ctx.moveTo(p0.x,p0.y);ctx.lineTo(p1.x,p1.y);ctx.stroke();
+   }
+ }
 }
 function tree(x,z){
  let b=proj(x,z,0),t=proj(x,z,2.9);if(!b||!t)return;
