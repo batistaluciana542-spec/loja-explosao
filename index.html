@@ -30,7 +30,7 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#8cccf0;tou
 <script>
 (function(){
 const canvas=document.getElementById('game');
-const ctx=canvas.getContext('2d');
+const ctx=canvas.getContext('2d',{alpha:false});
 const status=document.getElementById('status');
 let W=0,H=0,DPR=1;
 
@@ -196,7 +196,7 @@ function joyEnd(e){
 }
 joy.addEventListener('pointerup',joyEnd);joy.addEventListener('pointercancel',joyEnd);
 
-status.textContent='3D LOCAL • OK';
+status.textContent='CENA CARREGADA';
 })();
 </script>
 </body>
