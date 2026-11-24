@@ -303,10 +303,104 @@ function updateNPCs(now){
  }
 }
 
+
+// ===== FAZENDA NO FINAL DO MAPA =====
+const farmBuildings=[
+ {x:-2.6,z:142,w:5.2,d:5.0,h:3.2,wall:"#b56b45",roof:"#713b2d",door:"#4b3027",type:0},
+ {x:3.1,z:146,w:3.8,d:4.0,h:4.6,wall:"#d7d0bd",roof:"#756b5c",door:"#51483d",type:1},
+ {x:0,z:153,w:4.8,d:3.6,h:2.8,wall:"#d8b36b",roof:"#8a5a35",door:"#5b3928",type:2}
+];
+
+const farmAnimals=[
+ {x:-4.0,z:147,type:0},
+ {x:-1.0,z:149,type:1},
+ {x:2.0,z:150,type:2},
+ {x:4.4,z:143,type:3},
+ {x:-3.2,z:155,type:0},
+ {x:1.0,z:157,type:1}
+];
+
+function farmBuilding(b){
+ const f=proj(b.x-b.w/2,b.z-b.d/2,0), r=proj(b.x+b.w/2,b.z-b.d/2,0);
+ const br=proj(b.x+b.w/2,b.z+b.d/2,0), bl=proj(b.x-b.w/2,b.z+b.d/2,0);
+ const t1=proj(b.x-b.w/2,b.z-b.d/2,b.h), t2=proj(b.x+b.w/2,b.z-b.d/2,b.h);
+ const t3=proj(b.x+b.w/2,b.z+b.d/2,b.h), t4=proj(b.x-b.w/2,b.z+b.d/2,b.h);
+ if(!(f&&r&&br&&bl&&t1&&t2&&t3&&t4))return;
+ poly([f,r,t2,t1],b.wall);
+ poly([r,br,t3,t2],shade(b.wall,-28));
+ poly([br,bl,t4,t3],shade(b.wall,-38));
+ poly([bl,f,t1,t4],shade(b.wall,-18));
+ const roofH=b.h+.65;
+ const q1=proj(b.x-b.w/2-.18,b.z-b.d/2-.12,roofH);
+ const q2=proj(b.x+b.w/2+.18,b.z-b.d/2-.12,roofH);
+ const q3=proj(b.x+b.w/2+.18,b.z+b.d/2+.12,roofH);
+ const q4=proj(b.x-b.w/2-.18,b.z+b.d/2+.12,roofH);
+ if(q1&&q2&&q3&&q4)poly([q1,q2,q3,q4],b.roof);
+ const d1=proj(b.x-.55,b.z-b.d/2-.03,0),d2=proj(b.x+.55,b.z-b.d/2-.03,0);
+ const d3=proj(b.x+.55,b.z-b.d/2-.04,1.75),d4=proj(b.x-.55,b.z-b.d/2-.04,1.75);
+ if(d1&&d2&&d3&&d4)poly([d1,d2,d3,d4],b.door);
+ if(b.type===1){
+   const s=proj(b.x,b.z-b.d/2-.04,2.8);
+   if(s){ctx.fillStyle="#eee9dc";ctx.beginPath();ctx.arc(s.x,s.y,Math.max(5,s.s*.18),0,Math.PI*2);ctx.fill();}
+ }
+}
+
+function farmFence(){
+ const posts=[[-5.4,139],[-3.6,139],[-1.8,139],[0,139],[1.8,139],[3.6,139],[5.4,139],
+              [-5.4,159],[-3.6,159],[-1.8,159],[0,159],[1.8,159],[3.6,159],[5.4,159]];
+ for(const [x,z] of posts){
+   const a=proj(x,z,0),b=proj(x,z,1.05);
+   if(a&&b)line([a,b],"#6b432b",Math.max(2,a.s*.035));
+ }
+ for(const z of [139,159]){
+   for(let x=-5.4;x<5.4;x+=1.8){
+     const a=proj(x,z,.72),b=proj(x+1.8,z,.72);
+     if(a&&b)line([a,b],"#8a5a38",Math.max(2,a.s*.025));
+   }
+ }
+ const gateL=proj(-.8,139,.05),gateR=proj(.8,139,.05),gateT=proj(0,139,.95);
+ if(gateL&&gateR&&gateT)line([gateL,gateT,gateR],"#6b432b",Math.max(2,gateT.s*.025));
+}
+
+function farmAnimal(a){
+ const body=proj(a.x,a.z,0.9);
+ const head=proj(a.x,a.z-.45,1.25);
+ const tail=proj(a.x,a.z+.5,1.0);
+ if(!body||!head)return;
+ const s=body.s;
+ let bodyCol="#8b5a3c",headCol="#8b5a3c";
+ if(a.type===1){bodyCol="#eee8d8";headCol="#eee8d8";}
+ if(a.type===2){bodyCol="#6f5848";headCol="#6f5848";}
+ if(a.type===3){bodyCol="#c9a06b";headCol="#c9a06b";}
+ ctx.fillStyle=bodyCol;
+ ctx.beginPath();ctx.ellipse(body.x,body.y,Math.max(6,s*.30),Math.max(4,s*.15),0,0,Math.PI*2);ctx.fill();
+ ctx.fillStyle=headCol;
+ ctx.beginPath();ctx.ellipse(head.x,head.y,Math.max(4,s*.13),Math.max(5,s*.12),0,0,Math.PI*2);ctx.fill();
+ for(const dx of [-.16,.16]){
+   const p1=proj(a.x+dx,a.z+.05,.72),p2=proj(a.x+dx,a.z+.18,0);
+   if(p1&&p2)line([p1,p2],"#4b382d",Math.max(2,s*.035));
+ }
+ if(a.type===1){
+   ctx.fillStyle="#51483e";
+   ctx.beginPath();ctx.arc(body.x-s*.10,body.y-s*.02,Math.max(2,s*.045),0,Math.PI*2);ctx.fill();
+   ctx.beginPath();ctx.arc(body.x+s*.10,body.y+s*.01,Math.max(2,s*.04),0,Math.PI*2);ctx.fill();
+ }
+ if(tail){
+   const a1=proj(a.x,a.z+.48,1.0);
+   const a2=proj(a.x,a.z+.82,1.18);
+   if(a1&&a2)line([a1,a2],"#4b382d",Math.max(2,s*.025));
+ }
+}
+
+// ===== FIM DA FAZENDA =====
+
 const renderObjects=[];
 for(const h of houses)renderObjects.push({type:0,ref:h,x:h.x,z:h.z,d:0});
 for(const v of trees)renderObjects.push({type:1,ref:v,x:v[0],z:v[1],d:0});
 for(const v of poles)renderObjects.push({type:2,ref:v,x:v[0],z:v[1],d:0});
+for(const b of farmBuildings)renderObjects.push({type:4,ref:b,x:b.x,z:b.z,d:0});
+for(const a of farmAnimals)renderObjects.push({type:5,ref:a,x:a.x,z:a.z,d:0});
+renderObjects.push({type:6,ref:null,x:0,z:139,d:0});
 for(const n of npcs)renderObjects.push({type:3,ref:n,x:n.x,z:n.z,d:0});
 let renderLast=0;
 function render(t){
@@ -326,6 +420,9 @@ function render(t){
      else if(o.type===1)tree(o.ref[0],o.ref[1]);
      else if(o.type===2)pole(o.ref[0],o.ref[1]);
      else if(o.type===3)npc(o.ref);
+     else if(o.type===4)farmBuilding(o.ref);
+     else if(o.type===5)farmAnimal(o.ref);
+     else if(o.type===6)farmFence();
    }
  }
  requestAnimationFrame(render);
