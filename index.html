@@ -305,13 +305,13 @@ function update(dt){
  if(keys.KeyA||keys.ArrowLeft)s--;if(keys.KeyD||keys.ArrowRight)s++;
  f+=-joyY;s+=joyX;const n=Math.hypot(f,s);if(n>1){f/=n;s/=n}
  const speed=4.8*dt;
- const dir=new THREE.Vector3(-Math.sin(yaw),0,-Math.cos(yaw));
+ const dir=new THREE.Vector3(Math.sin(yaw),0,Math.cos(yaw));
  const right=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw));
  camera.position.addScaledVector(dir,f*speed);camera.position.addScaledVector(right,s*speed);
  camera.position.x=Math.max(-5.05,Math.min(5.05,camera.position.x));
  camera.position.z=Math.max(-72,Math.min(72,camera.position.z));
  camera.position.y=1.68;
- camera.rotation.order='YXZ';camera.rotation.y=yaw;camera.rotation.x=pitch;camera.rotation.z=0;
+ camera.rotation.order='YXZ';camera.rotation.y=yaw;camera.rotation.x=pitch;
 }
 function animate(){requestAnimationFrame(animate);update(Math.min(clock.getDelta(),.05));renderer.render(scene,camera)}
 animate();
