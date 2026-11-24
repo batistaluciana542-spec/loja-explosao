@@ -17,7 +17,7 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#9fc9df;tou
 </head>
 <body>
 <canvas id="game"></canvas>
-<div id="loading">CARREGANDO MOTOR 3D...<br><small style="opacity:.7">tentando carregar Three.js</small></div>
+<div id="loading">CARREGANDO MOTOR 3D...<br><small style="opacity:.7">tentando carregar Three.js de vários servidores</small></div>
 <div id="hud">RUA 3D • THREE.JS</div>
 <div id="look"></div>
 <div id="joy"><div id="knob"></div></div>
@@ -97,6 +97,8 @@ addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updat
 setTimeout(()=>{loading.style.display='none'},150);requestAnimationFrame(loop);
 }catch(e){fail(e)}
 loadThree([
+'https://raw.githubusercontent.com/mrdoob/three.js/r181/build/three.min.js',
+'https://threejs.org/build/three.min.js',
 'https://unpkg.com/three@0.181.1/build/three.min.js',
 'https://cdn.jsdelivr.net/npm/three@0.181.1/build/three.min.js',
 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r181/three.min.js'
