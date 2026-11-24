@@ -1,46 +1,24 @@
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><title>Rua 3D • Three.js</title>
-<style>
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#9fc9df;touch-action:none;font-family:Arial,sans-serif}#game{position:fixed;inset:0;width:100%;height:100%;display:block}#hud{position:fixed;z-index:20;left:10px;top:10px;padding:8px 10px;border-radius:8px;background:#111c;color:#fff;font-size:12px;font-weight:bold}#joy{position:fixed;z-index:30;left:18px;bottom:18px;width:132px;height:132px;border:2px solid #fff9;border-radius:50%;background:#1114}#knob{position:absolute;left:39px;top:39px;width:50px;height:50px;border-radius:50%;background:#fff;box-shadow:0 3px 12px #0007}#look{position:fixed;z-index:25;right:0;top:0;width:70%;height:100%}
-</style></head><body><canvas id="game"></canvas><div id="hud">INICIANDO 3D...</div><div id="look"></div><div id="joy"><div id="knob"></div></div>
-<script>
-(function(){
-'use strict';
-function start(){
- if(!window.THREE){document.getElementById('hud').textContent='ERRO DO MOTOR 3D';return}
- const scene=new THREE.Scene();
- scene.background=new THREE.Color(0x9fc9df);
- scene.fog=new THREE.Fog(0x9fc9df,35,110);
- const camera=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,.1,180);
- camera.position.set(0,1.7,0);camera.rotation.order='YXZ';
- const renderer=new THREE.WebGLRenderer({canvas:document.getElementById('game'),antialias:true});
- renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));renderer.setSize(innerWidth,innerHeight,false);
- function mat(c){return new THREE.MeshLambertMaterial({color:c})}
- function cube(x,y,z,w,h,d,c){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(c));m.position.set(x,y+h/2,z);scene.add(m);return m}
- scene.add(new THREE.HemisphereLight(0xffffff,0x526044,2));
- const sun=new THREE.DirectionalLight(0xffffff,1.2);sun.position.set(-20,30,10);scene.add(sun);
- const ground=new THREE.Mesh(new THREE.PlaneGeometry(90,260),mat(0x70945d));ground.rotation.x=-Math.PI/2;ground.position.z=70;scene.add(ground);
- const road=new THREE.Mesh(new THREE.PlaneGeometry(7,260),mat(0x505050));road.rotation.x=-Math.PI/2;road.position.set(0,0,70);scene.add(road);
- for(const x of[-5,5]){const s=new THREE.Mesh(new THREE.PlaneGeometry(3,260),mat(0xc5beb5));s.rotation.x=-Math.PI/2;s.position.set(x,0,70);scene.add(s)}
- for(let z=-25;z<210;z+=9)cube(0,.01,z,.16,.025,3,0xe5d67d);
- const houses=[
- [-8.8,8,5.0,6.2,3.0,0xd9b28c,0x754b3e],[-8.7,20,5.2,6.5,3.0,0xc98778,0x68443a],[-8.6,33,4.9,6.2,3.2,0xd8d3c9,0x765047],
- [8.8,10,5.0,6.2,3.0,0xd8cdb7,0x6f493e],[8.7,22,5.2,6.5,3.0,0xcda07e,0x69473b],[8.6,35,4.9,6.2,3.2,0xe0d8cd,0x805246]];
- for(const h of houses){const[x,z,w,d,hh,c,rc]=h;cube(x,0,z,w,hh,d,c);cube(x,.02,z-d/2-.07,.9,1.7,.14,0x49332b);for(const dx of[-w*.27,w*.27])cube(x+dx,1.55,z-d/2-.075,.82,.72,.10,0xa9d5df);const roof=new THREE.Mesh(new THREE.ConeGeometry(Math.max(w*.72,d*.62),1.15,4),mat(rc));roof.position.set(x,hh+.575,z);roof.rotation.y=Math.PI/4;scene.add(roof)}
- function tree(x,z,s=1){cube(x,0,z,.35,2.2*s,.35,0x65442d);for(const p of[[0,2.5,0],[-.55,2.35,0],[.55,2.35,0],[0,3,.1]]){const q=new THREE.Mesh(new THREE.SphereGeometry(.7*s,10,8),mat(0x397447));q.position.set(x+p[0]*s,p[1]*s,z+p[2]);scene.add(q)}}
- [[-4,7,1],[4,14,.9],[-4,25,1],[4,30,.85],[-9,16,.8],[9,26,.8]].forEach(t=>tree(...t));
- function pole(x,z){cube(x,0,z,.13,5.2,.13,0x5a5a56);cube(x,4.9,z,.1,.1,3.2,0x30302e)}
- [[-3,5],[3,15],[-3,27],[3,38]].forEach(p=>pole(...p));
- const joy=document.getElementById('joy'),knob=document.getElementById('knob'),look=document.getElementById('look');
- let jx=0,jy=0,looking=false,lx=0,ly=0,yaw=0,pitch=0;
- function jm(e){const r=joy.getBoundingClientRect();let x=e.clientX-r.left-r.width/2,y=e.clientY-r.top-r.height/2,n=Math.hypot(x,y),m=42;if(n>m){x=x*m/n;y=y*m/n}jx=x/m;jy=y/m;knob.style.transform='translate('+x+'px,'+y+'px)'}
- joy.onpointerdown=e=>{joy.setPointerCapture(e.pointerId);jm(e)};joy.onpointermove=jm;joy.onpointerup=joy.onpointercancel=joy.onlostpointercapture=()=>{jx=jy=0;knob.style.transform='translate(0,0)'};
- look.onpointerdown=e=>{looking=true;lx=e.clientX;ly=e.clientY;look.setPointerCapture(e.pointerId)};look.onpointermove=e=>{if(!looking)return;const dx=e.clientX-lx,dy=e.clientY-ly;lx=e.clientX;ly=e.clientY;yaw-=dx*.006;pitch=Math.max(-.75,Math.min(.75,pitch-dy*.004))};look.onpointerup=look.onpointercancel=()=>looking=false;
- const moveForward=new THREE.Vector3(),moveRight=new THREE.Vector3();let last=performance.now();
- function loop(t){const dt=Math.min(.04,(t-last)/1000);last=t;camera.rotation.y=yaw;camera.rotation.x=pitch;moveForward.set(Math.sin(yaw),0,Math.cos(yaw));moveRight.set(Math.cos(yaw),0,-Math.sin(yaw));const speed=4.2*dt;camera.position.addScaledVector(moveForward,jy*speed);camera.position.addScaledVector(moveRight,jx*speed);camera.position.y=1.7;camera.position.x=Math.max(-3,Math.min(3,camera.position.x));camera.position.z=Math.max(-20,Math.min(205,camera.position.z));renderer.render(scene,camera);requestAnimationFrame(loop)}
- document.getElementById('hud').textContent='RUA 3D • MOTOR OK';requestAnimationFrame(loop);
- addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight,false)});
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>Rua 3D</title><style>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#9fc9df;touch-action:none;font-family:Arial}canvas{position:fixed;inset:0;width:100%;height:100%}#joy{position:fixed;z-index:5;left:18px;bottom:18px;width:132px;height:132px;border:2px solid #fff8;border-radius:50%;background:#1114}#knob{position:absolute;left:39px;top:39px;width:50px;height:50px;border-radius:50%;background:#fff}#look{position:fixed;right:0;top:0;width:70%;height:100%;z-index:4}</style></head><body><canvas id="game"></canvas><div id="look"></div><div id="joy"><div id="knob"></div></div><script>
+const c=document.getElementById('game'),x=c.getContext('2d');let W,H,dpr;
+function resize(){dpr=devicePixelRatio||1;W=innerWidth;H=innerHeight;c.width=W*dpr;c.height=H*dpr;x.setTransform(dpr,0,0,dpr,0,0)}addEventListener('resize',resize);resize();
+let px=0,pz=0,yaw=0,pitch=0,jx=0,jy=0,drag=0,lx=0,ly=0;
+const houses=[[-8.8,8,5,6,3,'#d9b28c','#754b3e'],[-8.7,20,5.2,6.5,3,'#c98778','#68443a'],[-8.6,33,4.9,6.2,3.2,'#d8d3c9','#765047'],[8.8,10,5,6,3,'#d8cdb7','#6f493e'],[8.7,22,5.2,6.5,3,'#cda07e','#69473b'],[8.6,35,4.9,6.2,3.2,'#e0d8cd','#805246']];
+const trees=[[-4,7,1],[4,14,.9],[-4,25,1],[4,30,.85],[-9,16,.8],[9,26,.8]],poles=[[-3,5],[3,15],[-3,27],[3,38]];
+function project(X,Y,Z){const dx=X-px,dz=Z-pz,co=Math.cos(yaw),si=Math.sin(yaw),rx=dx*co-dz*si,rz=dx*si+dz*co,cp=Math.cos(pitch),sp=Math.sin(pitch),ry=Y*cp-rz*sp,rz2=Y*sp+rz*cp;if(rz2<=.15)return null;const f=H*.78;return [W/2+rx*f/rz2,H*.53-ry*f/rz2,f/rz2]}
+function poly(a,b,d,col){x.fillStyle=col;x.beginPath();x.moveTo(a[0],a[1]);x.lineTo(b[0],b[1]);x.lineTo(d[0],d[1]);x.closePath();x.fill()}
+function box(o){let[X,Z,w,dep,h,col,roof]=o,vs=[[X-w/2,0,Z-dep/2],[X+w/2,0,Z-dep/2],[X+w/2,h,Z-dep/2],[X-w/2,h,Z-dep/2],[X-w/2,0,Z+dep/2],[X+w/2,0,Z+dep/2],[X+w/2,h,Z+dep/2],[X-w/2,h,Z+dep/2]],p=vs.map(v=>project(...v));if(p.some(v=>!v))return;poly(p[0],p[1],p[2],col);poly(p[0],p[2],p[3],col);poly(p[1],p[5],p[6],col);poly(p[1],p[6],p[2],col);poly(p[4],p[0],p[3],col);poly(p[4],p[3],p[7],col);poly(p[5],p[4],p[7],col);poly(p[5],p[7],p[6],col);
+const r=project(X-w*.55,h,Z-dep*.52),q=project(X+w*.55,h,Z-dep*.52),top=project(X,h+1.15,Z-dep*.1);if(r&&q&&top)poly(r,q,top,roof);
+const door=project(X,h*.5, Z-dep/2-.04);if(door){x.fillStyle='#49332b';x.fillRect(door[0]-8,door[1]-door[2]*.08,16,door[2]*.16)}
 }
-function load(url,next){const s=document.createElement('script');s.src=url;s.onload=start;s.onerror=next;document.head.appendChild(s)}
-load('https://cdn.jsdelivr.net/npm/three@0.181.1/build/three.min.js',()=>load('https://unpkg.com/three@0.181.1/build/three.min.js',()=>{document.getElementById('hud').textContent='ERRO: motor 3D indisponível'}));
-})();
+function tree(t){let[X,Z,s]=t,tr=project(X,1.3*s,Z),l=project(X,3*s,Z),a=project(X-.8*s,2.2*s,Z),b=project(X+.8*s,2.2*s,Z);if(!tr||!l||!a||!b)return;x.strokeStyle='#65442d';x.lineWidth=Math.max(2,tr[2]*.08);x.beginPath();x.moveTo(tr[0],tr[1]);x.lineTo(l[0],l[1]);x.stroke();x.fillStyle='#397447';for(const q of[a,b,l])x.beginPath(),x.arc(q[0],q[1],Math.max(8,q[2]*.35),0,7),x.fill()}
+function pole(t){let[X,Z]=t,a=project(X,0,Z),b=project(X,5.2,Z);if(!a||!b)return;x.strokeStyle='#555';x.lineWidth=Math.max(2,a[2]*.04);x.beginPath();x.moveTo(a[0],a[1]);x.lineTo(b[0],b[1]);x.stroke()}
+function draw(){x.clearRect(0,0,W,H);x.fillStyle='#9fc9df';x.fillRect(0,0,W,H);let horizon=H*.53;
+x.fillStyle='#70945d';x.fillRect(0,horizon,W,H-horizon);
+const corners=[[-3.5,0,-20],[3.5,0,-20],[3.5,0,205],[-3.5,0,205]].map(v=>project(...v));if(corners.every(Boolean)){x.fillStyle='#505050';x.beginPath();corners.forEach((v,i)=>i?x.lineTo(v[0],v[1]):x.moveTo(v[0],v[1]));x.closePath();x.fill()}
+for(let z=-20;z<205;z+=9){let a=project(-.08,.02,z),b=project(.08,.02,z);if(a&&b){x.strokeStyle='#e5d67d';x.lineWidth=3;x.beginPath();x.moveTo(a[0],a[1]);x.lineTo(b[0],b[1]);x.stroke()}}
+[...houses].sort((a,b)=>Math.hypot(b[0]-px,b[1]-pz)-Math.hypot(a[0]-px,a[1]-pz)).forEach(box);trees.forEach(tree);poles.forEach(pole);requestAnimationFrame(draw)}
+draw();
+function jm(e){let r=joy.getBoundingClientRect(),xx=e.clientX-r.left-r.width/2,yy=e.clientY-r.top-r.height/2,n=Math.hypot(xx,yy),m=42;if(n>m){xx*=m/n;yy*=m/n}jx=xx/m;jy=yy/m;knob.style.transform='translate('+xx+'px,'+yy+'px)'}const joy=document.getElementById('joy'),knob=document.getElementById('knob');joy.onpointerdown=e=>{joy.setPointerCapture(e.pointerId);jm(e)};joy.onpointermove=jm;joy.onpointerup=joy.onpointercancel=()=>{jx=jy=0;knob.style.transform='translate(0,0)'};look.onpointerdown=e=>{drag=1;lx=e.clientX;ly=e.clientY;look.setPointerCapture(e.pointerId)};look.onpointermove=e=>{if(!drag)return;yaw-=(e.clientX-lx)*.006;pitch=Math.max(-.55,Math.min(.55,pitch-(e.clientY-ly)*.004));lx=e.clientX;ly=e.clientY};look.onpointerup=look.onpointercancel=()=>drag=0;
+let last=performance.now();function move(t){let dt=Math.min(.04,(t-last)/1000);last=t;px+=Math.cos(yaw)*jx*4.2*dt;px+=Math.sin(yaw)*jy*4.2*dt;pz+=-Math.sin(yaw)*jx*4.2*dt;pz+=Math.cos(yaw)*jy*4.2*dt;px=Math.max(-3,Math.min(3,px));pz=Math.max(-20,Math.min(205,pz));requestAnimationFrame(move)}move(last);
 </script></body></html>
