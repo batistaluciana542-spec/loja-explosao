@@ -42,7 +42,16 @@ camera.position.set(0,1.68,34);
 const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
 renderer.setSize(innerWidth,innerHeight);
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 document.getElementById('game').appendChild(renderer.domElement);
+
+const sun=new THREE.DirectionalLight(0xfff4dc,2.0);
+sun.position.set(-28,55,18);sun.castShadow=true;
+sun.shadow.mapSize.set(1024,1024);
+sun.shadow.camera.left=-45;sun.shadow.camera.right=45;sun.shadow.camera.top=55;sun.shadow.camera.bottom=-55;
+scene.add(sun);
+scene.add(new THREE.HemisphereLight(0xcfe8ff,0x66594d,1.25));
 
 
 function makeTex(base, noise=18, speck=0){
@@ -67,7 +76,7 @@ function makeTex(base, noise=18, speck=0){
 }
 function material(base,noise=18,speck=0,repeatX=2.5,repeatY=2.5){
   const t=makeTex(base,noise,speck); t.repeat.set(repeatX,repeatY);
-  return new THREE.MeshBasicMaterial({map:t});
+  return new THREE.MeshLambertMaterial({map:t,side:THREE.DoubleSide});
 }
 const TEX={
   road:material('#505050',12,55,10,45),
@@ -110,13 +119,13 @@ const M={
  roofDark:TEX.roofDark,
  green:TEX.green,
  leaf2:TEX.leaf2,
- wire:new THREE.MeshBasicMaterial({color:0x222222}),
- black:new THREE.MeshBasicMaterial({color:0x202020})
+ wire:new THREE.MeshLambertMaterial({color:0x222222}),
+ black:new THREE.MeshLambertMaterial({color:0x202020})
 };
 
 function box(w,h,d,x,y,z,m){
  const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);
- o.position.set(x,y,z);scene.add(o);return o;
+ o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;scene.add(o);return o;
 }
 function plane(w,h,x,y,z,rotY,m){
  const o=new THREE.Mesh(new THREE.PlaneGeometry(w,h),m);
@@ -201,38 +210,216 @@ for(let z=-75;z<80;z+=8){
  box(6.95,.035,.07,9.45,.145,z,M.curb);
 }
 
-// Casas modeladas individualmente, cada fachada com proporções, portão, janela e detalhes próprios.
-function individualHouse(i,x,z,side){
-  const specs=[
-    {w:7.4,depth:5.0,h:3.35,wall:M.cream,gateM:M.darkGate,roofM:M.white,gateX:-.15,style:0},
-    {w:6.8,depth:5.4,h:3.05,wall:M.white,gateM:M.metal,roofM:M.gray,gateX:.25,style:1},
-    {w:7.7,depth:4.8,h:3.7,wall:M.salmon,gateM:M.darkGate,roofM:M.roofDark,gateX:-.35,style:2},
-    {w:6.9,depth:5.8,h:3.2,wall:M.gray,gateM:M.metal,roofM:M.white,gateX:.35,style:0},
-    {w:7.6,depth:5.1,h:3.45,wall:M.pink,gateM:M.darkGate,roofM:M.tile,gateX:0,style:1},
-    {w:6.6,depth:5.6,h:3.0,wall:M.blue,gateM:M.metal,roofM:M.gray,gateX:-.2,style:2}
-  ];
-  const s=specs[i%specs.length];
-  detailedHouse({...s,x,z,windows:true});
-  // Entrada/recuo individual, para evitar fachadas todas iguais.
-  const front=z-s.depth/2-.22;
-  if(i%3===0){
-    box(s.w*.75,.06,1.15,x,.18,front-.55,M.curb);
-  }else if(i%3===1){
-    box(1.8,.08,1.5,x+s.w*.22,.2,front-.72,M.concrete);
-  }else{
-    box(2.6,.07,.9,x-s.w*.18,.19,front-.45,M.tile);
-  }
-  // Pequeno detalhe de fachada variando por casa.
-  if(i%2===0){
-    box(.55,.7,.08,x-s.w*.38,1.05,front-.16,M.metal);
-  }else{
-    box(.8,.18,.08,x+s.w*.32,2.65,front-.16,M.white);
+// CASAS INDIVIDUAIS BASEADAS NAS FOTOS
+// Cada trecho tem uma fachada própria. Nada de repetir a mesma caixa com outra cor.
+
+function frontPanel(x,z,w,h,mat,side){
+  const front = z + (side==='L' ? -1 : 1);
+  const p=box(w,h,.12,x,h/2,front,mat);
+  return {front,p};
+}
+function frontBox(x,y,z,w,h,d,mat,side){
+  const zz=z+(side==='L' ? -d/2 : d/2);
+  return box(w,h,d,x,y,zz,mat);
+}
+function trim(x,y,z,w,h,side,mat=M.black){
+  const zz=z+(side==='L' ? -.08 : .08);
+  box(w,.13,.14,x,y+h/2,zz,mat);
+  box(.13,h,.14,x-w/2,y,zz,mat);
+  box(.13,h,.14,x+w/2,y,zz,mat);
+}
+function slats(x,y,z,w,h,side,mat=M.metal,count=8){
+  const zz=z+(side==='L' ? -.13 : .13);
+  for(let i=0;i<count;i++){
+    const xx=x-w/2+(i+.5)*(w/count);
+    box(.035,h,.06,xx,y,zz,mat);
   }
 }
-const leftZ=[-11,0,11,23,36,50];
-const rightZ=[-11,0,11,23,36,50];
-leftZ.forEach((z,i)=>individualHouse(i,-9.4,z,'L'));
-rightZ.forEach((z,i)=>individualHouse(i+6,9.4,z,'R'));
+function diagonalBands(x,z,w,h,side,count=3){
+  const zz=z+(side==='L' ? -.10 : .10);
+  for(let i=0;i<count;i++){
+    const xx=x-w*.32+i*w*.32;
+    const b=box(.16,h*.82,.08,xx,h*.53,zz,M.white);
+    b.rotation.z=(i%2===0 ? -0.43 : 0.43);
+  }
+}
+function roofGable(x,z,w,depth,base,side,mat=M.roofDark){
+  const shape=new THREE.Shape();
+  shape.moveTo(-w/2,0);shape.lineTo(0,1.55);shape.lineTo(w/2,0);shape.lineTo(-w/2,0);
+  const geo=new THREE.ExtrudeGeometry(shape,{depth:depth,bevelEnabled:false});
+  const mesh=new THREE.Mesh(geo,mat);
+  mesh.position.set(x,base,z+(side==='L' ? -depth/2 : -depth/2));
+  mesh.castShadow=true;mesh.receiveShadow=true;scene.add(mesh);
+  // pequeno beiral
+  box(w+.28,.12,.18,x,base+.05,z+(side==='L' ? -depth/2-.04 : depth/2+.04),mat);
+}
+function numberPlate(x,y,z,text,side){
+  const c=document.createElement('canvas');c.width=256;c.height=96;
+  const g=c.getContext('2d');g.clearRect(0,0,256,96);
+  g.fillStyle='rgba(255,255,255,.96)';g.font='bold 58px Arial';g.textAlign='center';g.textBaseline='middle';
+  g.fillText(text,128,48);
+  const t=new THREE.CanvasTexture(c);
+  const m=new THREE.MeshBasicMaterial({map:t,transparent:true,depthWrite:false,side:THREE.DoubleSide});
+  const s=new THREE.Mesh(new THREE.PlaneGeometry(1.0,.38),m);
+  s.position.set(x,y,z+(side==='L' ? -.16 : .16));
+  s.rotation.y=side==='L'?0:Math.PI;
+  scene.add(s);return s;
+}
+function garageDoor(x,z,w,h,side,color=M.gray,frame=M.black,slatColor=null){
+  const front=z+(side==='L' ? -.14 : .14);
+  box(w,h,.12,x,h/2,front,color);
+  trim(x,h/2,z,w,h,side,frame);
+  if(slatColor){
+    for(let yy=.28;yy<h-.12;yy+=.34) box(w-.18,.035,.05,x,yy,front+(side==='L' ? -.07 : .07),slatColor);
+  }
+}
+function simpleDoor(x,z,w,h,side,color=M.metal){
+  const front=z+(side==='L' ? -.15 : .15);
+  box(w,h,.13,x,h/2,front,color);
+  trim(x,h/2,z,w,h,side,M.black);
+}
+function treeFront(x,z,s,side){
+  const fx=x+(side==='L'?-.95:.95);
+  cylinder(.16*s,2.15*s,fx,1.08*s,z,M.wood,10);
+  const crown=new THREE.Mesh(new THREE.SphereGeometry(1.0*s,12,9),M.green);
+  crown.position.set(fx,2.45*s,z);crown.scale.set(1.25,.72,1.0);
+  crown.castShadow=true;crown.receiveShadow=true;scene.add(crown);
+  const crown2=new THREE.Mesh(new THREE.SphereGeometry(.72*s,10,8),M.leaf2);
+  crown2.position.set(fx-.45*s,2.48*s,z+.18*s);
+  crown2.castShadow=true;crown2.receiveShadow=true;scene.add(crown2);
+}
+function benchStructure(x,z,w,side){
+  const front=z+(side==='L'?-.25:.25);
+  box(w,.12,.45,x,.52,front,M.metal);
+  box(w,.08,.42,x,.9,front,M.metal);
+  box(.08,.55,.08,x-w*.35,.25,front,M.metal);
+  box(.08,.55,.08,x+w*.35,.25,front,M.metal);
+}
+function outdoorSink(x,z,side){
+  const front=z+(side==='L'?-.32:.32);
+  box(1.1,.12,.52,x,1.02,front,M.concrete);
+  box(.9,.1,.4,x,.68,front,M.concrete);
+  box(.12,.7,.12,x-.38,.34,front,M.concrete);
+  box(.12,.7,.12,x+.38,.34,front,M.concrete);
+  box(.07,.5,.07,x,.3,front,M.metal);
+}
+
+function houseBlueWall(x,z,side){
+  // FOTO 1: muro branco, faixas diagonais, portão cinza e telhado azul ao fundo.
+  const w=7.7,h=3.05,d=5.2;
+  box(w,h,d,x,h/2,z,M.white);
+  const front=z+(side==='L'?-d/2:d/2);
+  box(w+.22,.16,.22,x,h+.05,front,M.white);
+  roofGable(x,z,w*.72,d*.78,h+.05,side,M.blue);
+  diagonalBands(x,z,w,h,side,3);
+  garageDoor(x-1.15,z,2.25,2.15,side,M.darkGate,M.black,null);
+  simpleDoor(x+2.0,z,.72,2.1,side,M.gray);
+  box(2.65,.12,.5,x-1.0,.14,front+(side==='L'?.35:-.35),M.concrete);
+  treeFront(x+.15,z-.25,.98,side);
+  // pequenas linhas do portão
+  slats(x-1.15,1.08,z,2.18,1.9,side,M.metal,7);
+}
+
+function house1016(x,z,side){
+  // FOTO 2: fachada cinza lisa, garagem grande, moldura escura e duas portas claras.
+  const w=7.9,h=3.15,d=5.4;
+  box(w,h,d,x,h/2,z,M.gray);
+  const front=z+(side==='L'?-d/2:d/2);
+  box(w+.2,.18,.25,x,h+.06,front,M.gray);
+  garageDoor(x-1.35,z,4.65,2.32,side,M.gray,M.black,null);
+  numberPlate(x-1.35,1.65,z, '1016',side);
+  simpleDoor(x+1.9,z,.72,2.25,side,M.white);
+  simpleDoor(x+2.72,z,.72,2.25,side,M.white);
+  box(w-.35,.12,.9,x,.15,front+(side==='L'?.48:-.48),M.black);
+  // ralo e pequeno número/placa lateral
+  box(.18,.18,.04,x+2.65,1.55,front+(side==='L'?.08:-.08),M.metal);
+}
+
+function houseBlueRoofWall(x,z,side){
+  // FOTO 3: muro branco envelhecido + telhado azul visível + estrutura branca comprida.
+  const w=7.8,h=2.65,d=5.0;
+  box(w,h,d,x,h/2,z,M.white);
+  const front=z+(side==='L'?-d/2:d/2);
+  roofGable(x,z,w*.68,d*.8,h+.02,side,M.blue);
+  // manchas/placas horizontais para quebrar o aspecto de parede perfeita
+  for(let yy=.55;yy<2.35;yy+=.38){
+    box(w*.72,.035,.05,x,yy,front+(side==='L'?-.08:.08),M.curb);
+  }
+  benchStructure(x+.05,z,5.8,side);
+  box(5.9,.10,.2,x,.96,front+(side==='L'?-.08:.08),M.white);
+  treeFront(x+2.45,z+.15,1.05,side);
+}
+
+function houseRedBlue(x,z,side){
+  // FOTO 4: branco + vermelho + azul, garagem branca e árvores podadas.
+  const w=8.1,h=3.1,d=5.0;
+  box(w,h,d,x,h/2,z,M.white);
+  const front=z+(side==='L'?-d/2:d/2);
+  // faixa vermelha superior e pilares vermelhos
+  box(w,.62,.14,x,2.78,front+(side==='L'?.01:-.01),M.red);
+  box(.48,2.8,.16,x-w/2+.42,1.4,front+(side==='L'?.02:-.02),M.red);
+  box(.48,2.8,.16,x+w/2-1.82,1.4,front+(side==='L'?.02:-.02),M.red);
+  garageDoor(x-1.05,z,3.15,2.25,side,M.white,M.gray,'#d4d4d4');
+  box(1.0,2.35,.15,x-3.05,1.25,front+(side==='L'?.02:-.02),M.blue);
+  simpleDoor(x+1.85,z,.72,2.15,side,M.white);
+  treeFront(x-.75,z-.18,.92,side);
+  treeFront(x+2.25,z-.15,.78,side);
+  outdoorSink(x+2.95,z,side);
+}
+
+function houseBeigeGate(x,z,side){
+  const w=7.4,h=3.25,d=5.1;
+  box(w,h,d,x,h/2,z,M.cream);
+  const front=z+(side==='L'?-d/2:d/2);
+  roofGable(x,z,w*.62,d*.76,h+.03,side,M.roofDark);
+  garageDoor(x-.7,z,2.9,2.15,side,M.metal,M.black,null);
+  simpleDoor(x+1.8,z,.8,2.1,side,M.wood);
+  window(x-2.4,1.75,front+(side==='L'?.02:-.02),1.1,.9,0);
+  treeFront(x+2.65,z,.72,side);
+}
+
+function housePinkGate(x,z,side){
+  const w=7.6,h=3.35,d=5.0;
+  box(w,h,d,x,h/2,z,M.pink);
+  const front=z+(side==='L'?-d/2:d/2);
+  box(w,.35,.18,x,.3,front,M.white);
+  garageDoor(x+.55,z,3.0,2.25,side,M.darkGate,M.black,null);
+  simpleDoor(x-2.2,z,.75,2.1,side,M.white);
+  window(x-1.05,1.7,front+(side==='L'?.02:-.02),1.0,.9,0);
+  treeFront(x-2.65,z,.8,side);
+}
+
+function houseWhiteMetal(x,z,side){
+  const w=7.9,h=2.85,d=5.3;
+  box(w,h,d,x,h/2,z,M.white);
+  const front=z+(side==='L'?-d/2:d/2);
+  garageDoor(x-1.0,z,3.8,2.05,side,M.white,M.gray,'#bdbdbd');
+  for(let i=-3;i<=3;i++) box(.04,1.8,.08,x-1.0+i*.5,1.05,front+(side==='L'?.08:-.08),M.metal);
+  simpleDoor(x+2.0,z,.75,2.0,side,M.gray);
+  benchStructure(x+2.75,z,1.4,side);
+  treeFront(x+3.1,z,.7,side);
+}
+
+function houseGrayRed(x,z,side){
+  const w=7.5,h=3.0,d=5.2;
+  box(w,h,d,x,h/2,z,M.gray);
+  const front=z+(side==='L'?-d/2:d/2);
+  box(w,.22,.18,x,2.85,front,M.red);
+  garageDoor(x-.9,z,2.8,2.15,side,M.gray,M.black,null);
+  simpleDoor(x+1.65,z,.8,2.1,side,M.white);
+  window(x-2.65,1.7,front+(side==='L'?.02:-.02),1.0,.9,0);
+  treeFront(x-2.8,z,.76,side);
+}
+
+// Sequência da rua: as fachadas mudam de verdade de uma casa para outra.
+const housePatterns=[houseBlueWall,house1016,houseBlueRoofWall,houseRedBlue,houseBeigeGate,housePinkGate,houseWhiteMetal,houseGrayRed];
+const houseZ=[-12,-1,10,21,33,45,57,69];
+
+houseZ.forEach((z,i)=>{
+  housePatterns[i%housePatterns.length](-9.35,z,'L');
+  housePatterns[(i+2)%housePatterns.length](9.35,z,'R');
+});
+
 
 // Muros baixos extras, como nas fotos.
 wallSegment(-9.4,-7,7.0,.8,.22,M.salmon);
@@ -243,10 +430,10 @@ wallSegment(9.4,17,7.0,.8,.22,M.gray);
 // Árvores mais próximas do formato das referências.
 function tree(x,z,s=1){
  cylinder(.16*s,2.3*s,x,1.15*s,z,M.wood,8);
- const a=new THREE.Mesh(new THREE.SphereGeometry(1.2*s,9,7),M.green);
- a.position.set(x,2.75*s,z);scene.add(a);
- const b=new THREE.Mesh(new THREE.SphereGeometry(.82*s,8,7),M.leaf2);
- b.position.set(x+.55*s,2.55*s,z+.1*s);scene.add(b);
+ const a=new THREE.Mesh(new THREE.SphereGeometry(1.2*s,12,9),M.green);
+ a.position.set(x,2.75*s,z);a.castShadow=true;a.receiveShadow=true;scene.add(a);
+ const b=new THREE.Mesh(new THREE.SphereGeometry(.82*s,10,8),M.leaf2);
+ b.position.set(x+.55*s,2.55*s,z+.1*s);b.castShadow=true;b.receiveShadow=true;scene.add(b);
 }
 tree(-6.8,-1,.95);tree(6.8,5,.8);tree(-6.8,29,1.05);tree(6.8,43,.85);
 
