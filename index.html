@@ -81,36 +81,37 @@ function ground(){
 function house(h){
  const x1=h.x-h.w/2,x2=h.x+h.w/2,z1=h.z-h.d/2,z2=h.z+h.d/2;
  const Hh=h.h,roofH=Hh+.72;
- const a=proj(x1,z1,0),b=proj(x2,z1,0),c=proj(x2,z2,0),d=proj(x1,z2,0);
- const a1=proj(x1,z1,Hh),b1=proj(x2,z1,Hh),c1=proj(x2,z2,Hh),d1=proj(x1,z2,Hh);
- const rf=proj(h.x,z1,roofH),rb=proj(h.x,z2,roofH);
- if([a,b,c,d,a1,b1,c1,d1,rf,rb].some(p=>!p))return;
+ const verts=[
+  [x1,z1,0],[x2,z1,0],[x2,z2,0],[x1,z2,0],
+  [x1,z1,Hh],[x2,z1,Hh],[x2,z2,Hh],[x1,z2,Hh],
+  [h.x,z1,roofH],[h.x,z2,roofH]
+ ];
+ const p=verts.map(v=>proj(v[0],v[1],v[2]));
+ if(p.some(v=>!v))return;
 
+ // Faces independentes, ordenadas pela profundidade real do centro.
+ // Assim nenhuma parede desaparece só porque a câmera girou alguns graus.
+ const faces=[
+  {ids:[0,1,5,4],fill:h.wall},
+  {ids:[1,2,6,5],fill:h.side},
+  {ids:[2,3,7,6],fill:shade(h.side,-22)},
+  {ids:[3,0,4,7],fill:shade(h.side,-16)},
+  {ids:[4,5,8],fill:shade(h.wall,-8)},
+  {ids:[5,6,9,8],fill:h.roof},
+  {ids:[6,7,9],fill:shade(h.roof,-14)},
+  {ids:[7,4,8,9],fill:shade(h.roof,-8)}
+ ];
+ const faceDepth=(f)=>{
+   let d=0,n=0;
+   for(const id of f.ids){d+=p[id].d;n++}
+   return d/n;
+ };
+ faces.sort((a,b)=>faceDepth(b)-faceDepth(a));
+ for(const f of faces)poly(f.ids.map(id=>p[id]),f.fill);
+
+ // A fachada mais próxima recebe os detalhes.
  const q=cam(h.x,h.z);
- const front=q.f>0;
- const left=q.s>0;
-
- // Desenha somente as faces realmente visíveis. A versão anterior desenhava
- // praticamente a casa inteira de uma vez, e o Canvas não é um motor 3D.
- // Resultado: paredes atravessando paredes. Humanos já inventaram isso em 1995,
- // mas não precisamos repetir.
- if(front){
-   poly([a,b,b1,a1],h.wall);
-   if(left) poly([a,d,d1,a1],shade(h.side,-16));
-   else poly([b,c,c1,b1],h.side);
-   poly([a1,b1,rf],shade(h.wall,-8));
-   if(left) poly([a1,rf,rb,d1],shade(h.roof,-8));
-   else poly([b1,rf,rb,c1],h.roof);
- }else{
-   poly([d,c,c1,d1],shade(h.side,-22));
-   if(left) poly([a,d,d1,a1],shade(h.side,-16));
-   else poly([b,c,c1,b1],h.side);
-   poly([d1,c1,rb],shade(h.side,-12));
-   if(left) poly([a1,d1,rb,rf],shade(h.roof,-8));
-   else poly([b1,c1,rb,rf],h.roof);
- }
-
- // Detalhes ficam presos à única fachada que está voltada para a câmera.
+ const front=q.f>=0;
  const facadeZ=front?z1-.012:z2+.012;
 
  function panel(cx,cy,w,hgt,fill,border){
@@ -124,7 +125,7 @@ function house(h){
    return{p1,p2,p3,p4};
  }
 
- const door=panel(h.x-.72,1.0,.82,1.75,h.door,"#3a2a24");
+ panel(h.x-.72,1.0,.82,1.75,h.door,"#3a2a24");
  const win1=panel(h.x+.72,2.02,1.12,.78,h.win,h.trim);
  const win2=panel(h.x-.72,2.08,.82,.66,h.win,h.trim);
 
@@ -136,12 +137,10 @@ function house(h){
  }
  cross(win1);cross(win2);
 
- // Portão baixo, alinhado exatamente na fachada.
  if(h.style===0||h.style===3){
    panel(h.x+1.55,.72,.9,1.0,h.gate||"#5a514a","#393735");
  }
 
- // Muros laterais baixos, sem atravessar a casa.
  const mz=front?z1-.46:z2+.46;
  function wallSeg(aa,bb){
    const p1=proj(aa,mz,0),p2=proj(bb,mz,0),p3=proj(bb,mz,.5),p4=proj(aa,mz,.5);
