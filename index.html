@@ -8,8 +8,8 @@
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#8fcdf0;touch-action:none}
 #game{position:fixed;inset:0;width:100%;height:100%;display:block}
 #look{position:fixed;right:0;top:0;width:68%;height:100%;z-index:5}
-#joy{position:fixed;left:18px;bottom:20px;width:126px;height:126px;border:2px solid #fff8;border-radius:50%;background:#ffffff28;z-index:10}
-#stick{position:absolute;left:35px;top:35px;width:52px;height:52px;border-radius:50%;background:#fff;box-shadow:0 3px 12px #0006}
+#joy{position:fixed;left:18px;bottom:20px;width:136px;height:136px;border:2px solid #fff8;border-radius:50%;background:#ffffff28;z-index:10}
+#stick{position:absolute;left:42px;top:42px;width:52px;height:52px;border-radius:50%;background:#fff;box-shadow:0 3px 12px #0006}
 #hud{position:fixed;top:12px;left:12px;z-index:10;background:#0009;color:#fff;padding:8px 11px;border-radius:9px;font:700 13px Arial}
 #status{position:fixed;top:48px;left:12px;z-index:10;background:#0007;color:#fff;padding:5px 8px;border-radius:7px;font:11px Arial}
 </style>
@@ -71,11 +71,11 @@ cube(3.2,.15,140,0x789866).position.set(11,.01,48);
 for(let z=0;z<130;z+=9)cube(.16,.025,4,0xe7d27b).position.set(0,.02,z);
 
 const data=[
-[-8,2,0xd7bd98,0x754a3d],[8,2,0xe7dfd4,0x985044],
-[-8,17,0xc77d6c,0x69483c],[8,17,0x6e91a4,0x565656],
-[-8,34,0xd2b58a,0x76503d],[8,34,0xdcd4c8,0x855348],
-[-8,53,0xb96e60,0x69473c],[8,53,0xd5cec2,0x704d45],
-[-8,74,0xc7aa7f,0x704a3b],[8,74,0xe2ddd4,0x875346]];
+[-11.5,2,0xd7bd98,0x754a3d],[11.5,2,0xe7dfd4,0x985044],
+[-11.5,17,0xc77d6c,0x69483c],[11.5,17,0x6e91a4,0x565656],
+[-11.5,34,0xd2b58a,0x76503d],[11.5,34,0xdcd4c8,0x855348],
+[-11.5,53,0xb96e60,0x69473c],[11.5,53,0xd5cec2,0x704d45],
+[-11.5,74,0xc7aa7f,0x704a3b],[11.5,74,0xe2ddd4,0x875346]];
 data.forEach(a=>makeHouse(a[0],a[1],a[2],a[3]));
 [[-6,9],[6,25],[-6,43],[6,61],[-6,82],[6,99]].forEach(a=>makeTree(a[0],a[1]));
 [[-6.8,4],[6.8,23],[-6.8,47],[6.8,69],[-6.8,91]].forEach(a=>makePole(a[0],a[1]));
@@ -97,7 +97,7 @@ function loop(now){
  let f=(keys.KeyW||keys.ArrowUp?1:0)-((keys.KeyS||keys.ArrowDown)?1:0)-jy;
  let s=(keys.KeyD||keys.ArrowRight?1:0)-((keys.KeyA||keys.ArrowLeft)?1:0)+jx;
  const n=Math.hypot(f,s);if(n>1){f/=n;s/=n}
- const speed=5*dt;
+ const speed=5.2*dt;
  camera.position.x+=(Math.sin(yaw)*f+Math.cos(yaw)*s)*speed;
  camera.position.z+=(-Math.cos(yaw)*f+Math.sin(yaw)*s)*speed;
  camera.position.x=Math.max(-6.1,Math.min(6.1,camera.position.x));
