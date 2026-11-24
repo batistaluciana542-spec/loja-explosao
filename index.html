@@ -113,10 +113,7 @@ function house(h){
  faces.sort((u,v)=>v.d-u.d).forEach(f=>face(f.p,f.c));
 
  // Reforço de profundidade: beirais e linhas verticais nas quinas.
- for(const [x,z] of [[x1,z1],[x2,z1],[x2,z2],[x1,z2]]){
-   const p0=hp(x,z,0),p1=hp(x,z,Hh);
-   if(p0&&p1)line([p0,p1],shade(h.side,-38),Math.max(2,p0.s*.018));
- }
+ // quinas mantidas apenas pelas próprias faces para reduzir custo de desenho
 
  // TELHADO DE DUAS ÁGUAS com espessura.
  const e=.42;
