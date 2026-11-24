@@ -145,7 +145,7 @@ function move(dt){
   p.x+=wx*dt*6;p.z+=wz*dt*6;
  }
  p.x=Math.max(-R,Math.min(R,p.x));p.z=Math.max(-R,Math.min(R,p.z))
-}p.x=Math.max(-R,Math.min(R,p.x));p.z=Math.max(-R,Math.min(R,p.z))}
+}
 function project(x,z,h){
  const dx=x-p.x,dz=z-p.z,c=Math.cos(p.yaw),s=Math.sin(p.yaw);
  const rx=dx*c-dz*s,rz=dx*s+dz*c;
