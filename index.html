@@ -54,27 +54,46 @@ function ground(){
  const horizon=Math.max(0,Math.min(H,H*.53+Math.sin(C.pitch)*Math.min(W,H)*.92));
  ctx.fillStyle="#86a66b";ctx.fillRect(0,horizon,W,H-horizon);
 
+ // Superfícies do chão projetadas em faixas independentes.
+ // As faixas continuam válidas mesmo quando a câmera vira para trás,
+ // evitando que o chão desapareça por causa de um único plano inválido.
+ function gp(x,z){
+   const q=cam(x,z);
+   const focal=Math.min(W,H)*.92;
+   const pc=Math.cos(C.pitch);
+   const safeF=Math.max(Math.abs(q.f),.36);
+   const vertical=(-C.cameraH)*pc-q.f*Math.sin(C.pitch);
+   const depth=Math.max(safeF*pc,.26);
+   const scale=focal/depth;
+   return{x:W/2+q.s*scale,y:H*.53-vertical*scale,s:scale,d:q.f};
+ }
+ function gpoly(points,fill){
+   const valid=points.filter(Boolean);
+   if(valid.length<3)return;
+   ctx.fillStyle=fill;
+   ctx.beginPath();ctx.moveTo(valid[0].x,valid[0].y);
+   for(let i=1;i<valid.length;i++)ctx.lineTo(valid[i].x,valid[i].y);
+   ctx.closePath();ctx.fill();
+ }
+
  const strips=[[-5.4,-3.65,"#c5beb2"],[-3.65,3.65,"#55575a"],[3.65,5.4,"#c5beb2"]];
- for(let z=C.z+.7;z<C.z+190;z+=2.2){
+ const start=C.z-120,end=C.z+190;
+ for(let z=start;z<end;z+=2.2){
   for(const [l,r,col] of strips){
-   let a=proj(l,z),b=proj(r,z),c1=proj(r,z+2.2),d=proj(l,z+2.2);
-   poly([a,b,c1,d],col);
+   gpoly([gp(l,z),gp(r,z),gp(r,z+2.2),gp(l,z+2.2)],col);
   }
  }
- /* bordas de asfalto */
- for(const x of [-3.65,3.65]){let a=proj(x,C.z+.7),b=proj(x,C.z+190);line([a,b],"#8b8d8d",1)}
- /* faixa central tracejada */
- for(let z=C.z+5;z<C.z+185;z+=8){
-  let a=proj(-.08,z),b=proj(.08,z),c1=proj(.08,z+3.4),d=proj(-.08,z+3.4);
-  poly([a,b,c1,d],"#e3d36c");
+ for(const x of [-3.65,3.65]){
+  line([gp(x,start),gp(x,end)],"#8b8d8d",1);
  }
- /* juntas das calçadas */
- for(let z=C.z+7;z<C.z+185;z+=8){
-  let a=proj(-5.35,z),b=proj(-3.7,z);line([a,b],"#aaa59b",.7);
-  a=proj(3.7,z);b=proj(5.35,z);line([a,b],"#aaa59b",.7);
+ for(let z=start;z<end;z+=8){
+  gpoly([gp(-.08,z),gp(.08,z),gp(.08,z+3.4),gp(-.08,z+3.4)],"#e3d36c");
+ }
+ for(let z=start;z<end;z+=8){
+  line([gp(-5.35,z),gp(-3.7,z)],"#aaa59b",.7);
+  line([gp(3.7,z),gp(5.35,z)],"#aaa59b",.7);
  }
 }
-
 /* NOVAS CASAS: cada casa é um volume fechado com quatro paredes, beiral,
    telhado de duas águas, porta recuada visualmente, janelas com moldura,
    muro frontal e pequeno jardim. Nada de fachada solta. */
