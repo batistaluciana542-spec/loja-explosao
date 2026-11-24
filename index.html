@@ -6,7 +6,7 @@
 <title>NEON FRONTIER</title>
 <style>
 *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#08111d;color:white;font-family:Arial,sans-serif}
-#game{position:fixed;inset:0;width:100%;height:100%;touch-action:none}
+#game{position:fixed;inset:0;width:100%;height:100%;touch-action:none;display:block;z-index:1;background:linear-gradient(#6fc7ff 0%,#bfeeff 55%,#78b86b 55%,#16351c 100%)}
 #menu{position:fixed;inset:0;z-index:5;display:grid;place-items:center;background:radial-gradient(circle at 50% 35%,#174a78,#070b16 62%,#020308)}
 .panel{width:min(92vw,560px);padding:30px;border:1px solid #4eeaff66;border-radius:26px;background:#07111eee;box-shadow:0 0 70px #00d9ff25;text-align:center}
 .logo{font-size:clamp(42px,10vw,72px);font-weight:900;letter-spacing:7px;color:#9cffff;text-shadow:0 0 12px #00eaff,0 0 45px #007bff}
@@ -77,7 +77,31 @@ function move(dt){let dx=0,dz=0;if(keys.w||keys.arrowup)dz-=1;if(keys.s||keys.ar
 function project(x,z,h){let sx=W/2+(x-p.x)*26-(z-p.z)*26;let sy=H/2+(x-p.x)*13+(z-p.z)*13-h*25;return [sx,sy]}
 function poly(points,fill){ctx.beginPath();ctx.moveTo(points[0][0],points[0][1]);for(let i=1;i<points.length;i++)ctx.lineTo(points[i][0],points[i][1]);ctx.closePath();ctx.fillStyle=fill;ctx.fill()}
 function drawBlock(x,z,b){let [sx,sy]=project(x,z,b.h);let top=[[sx,sy],[sx+26,sy+13],[sx,sy+26],[sx-26,sy+13]];poly(top,b.type==="sand"?"#d8c27b":"#55b957");let depth=Math.max(10,b.h*7);poly([[sx-26,sy+13],[sx,sy+26],[sx,sy+26+depth],[sx-26,sy+13+depth]],b.type==="sand"?"#a98d52":"#387b3c");poly([[sx+26,sy+13],[sx,sy+26],[sx,sy+26+depth],[sx+26,sy+13+depth]],b.type==="sand"?"#b39b5d":"#2d6633");if(b.tree){poly([[sx-7,sy-15],[sx+7,sy-15],[sx+7,sy-45],[sx-7,sy-45]],"#79502e");poly([[sx,sy-62],[sx-25,sy-38],[sx-12,sy-24],[sx+12,sy-24],[sx+25,sy-38]],"#267a45")}if(b.crystal){poly([[sx,sy-48],[sx+9,sy-28],[sx,sy-15],[sx-9,sy-28]],"#45eaff");}}
-function draw(){ctx.clearRect(0,0,W,H);let g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,"#69bff0");g.addColorStop(.55,"#b6e7ff");g.addColorStop(.56,"#18351f");g.addColorStop(1,"#08150c");ctx.fillStyle=g;ctx.fillRect(0,0,W,H);let arr=[];for(let x=-R;x<=R;x++)for(let z=-R;z<=R;z++){let b=block(x,z);if(b)arr.push([x+z,b,x,z])}arr.sort((a,b)=>a[0]-b[0]);for(let q of arr)drawBlock(q[2],q[3],q[1]);let [px,py]=project(p.x,p.z,2.5);ctx.fillStyle="#48eaff";ctx.beginPath();ctx.arc(px,py,9,0,Math.PI*2);ctx.fill();ctx.fillStyle="#fff";ctx.font="bold 12px Arial";ctx.textAlign="center";ctx.fillText(p.name,px,py-15);ctx.textAlign="left";ctx.fillStyle="#ffffff99";ctx.font="12px Arial";ctx.fillText("WASD / setas para explorar • ⛏ para minerar",14,H-15)}
+function draw(){
+ctx.save();
+ctx.setTransform(D,0,0,D,0,0);
+ctx.clearRect(0,0,W,H);
+let sky=ctx.createLinearGradient(0,0,0,H);
+sky.addColorStop(0,"#58b7f2");
+sky.addColorStop(.48,"#bdeaff");
+sky.addColorStop(.49,"#79b86a");
+sky.addColorStop(1,"#17391d");
+ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);
+ctx.fillStyle="#fff4a8";ctx.shadowColor="#fff4a8";ctx.shadowBlur=30;
+ctx.beginPath();ctx.arc(W-90,90,32,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
+ctx.fillStyle="#ffffffaa";
+for(let i=0;i<4;i++){let cx=90+i*190,cy=90+(i%2)*55;ctx.beginPath();ctx.arc(cx,cy,22,0,Math.PI*2);ctx.arc(cx+28,cy-10,28,0,Math.PI*2);ctx.arc(cx+58,cy,21,0,Math.PI*2);ctx.fill();}
+let arr=[];
+for(let x=-R;x<=R;x++)for(let z=-R;z<=R;z++){let bl=block(x,z);if(bl)arr.push([x+z,x,z,bl]);}
+arr.sort((a,b)=>a[0]-b[0]);
+for(const q of arr)drawBlock(q[1],q[2],q[3]);
+let pp=project(p.x,p.z,2.5);
+ctx.fillStyle="#172033";ctx.beginPath();ctx.arc(pp[0],pp[1]+5,10,0,Math.PI*2);ctx.fill();
+ctx.fillStyle="#48eaff";ctx.beginPath();ctx.arc(pp[0],pp[1]-3,8,0,Math.PI*2);ctx.fill();
+ctx.fillStyle="#fff";ctx.font="bold 12px Arial";ctx.textAlign="center";ctx.fillText(p.name,pp[0],pp[1]-18);ctx.textAlign="left";
+ctx.fillStyle="#ffffffdd";ctx.font="bold 13px Arial";ctx.fillText("WASD / SETAS  •  EXPLORE O MUNDO",14,H-18);
+ctx.restore();
+}
 let last=performance.now();function loop(now){let dt=Math.min(.05,(now-last)/1000);last=now;if(playing)move(dt);draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);ui();
 })();
 </script>
