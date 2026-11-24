@@ -59,7 +59,7 @@ function ground(){
  // O chão existe para os dois lados da posição do jogador, mas cada
  // trecho só é desenhado quando está na frente da câmera. Assim não há
  // duplicação nem sobreposição quando o jogador olha para trás.
- for(let z=C.z-220;z<C.z+220;z+=2.2){
+ for(let z=C.z-110;z<C.z+110;z+=2.2){
    for(const [l,r,col] of strips){
      const a=proj(l,z),b=proj(r,z),c1=proj(r,z+2.2),d=proj(l,z+2.2);
      if(a&&b&&c1&&d)poly([a,b,c1,d],col);
@@ -68,20 +68,20 @@ function ground(){
 
  // Bordas somente dos trechos visíveis.
  for(const x of [-3.65,3.65]){
-   for(let z=C.z-220;z<C.z+220;z+=1.5){
+   for(let z=C.z-110;z<C.z+110;z+=1.5){
      const a=proj(x,z),b=proj(x,z+1.5);
      if(a&&b)line([a,b],"#8b8d8d",1);
    }
  }
 
  // Faixa central, nos dois sentidos, sem duplicar.
- for(let z=C.z-220;z<C.z+220;z+=8){
+ for(let z=C.z-110;z<C.z+110;z+=8){
    const a=proj(-.08,z),b=proj(.08,z),c1=proj(.08,z+3.4),d=proj(-.08,z+3.4);
    if(a&&b&&c1&&d)poly([a,b,c1,d],"#e3d36c");
  }
 
  // Juntas das calçadas.
- for(let z=C.z-220;z<C.z+220;z+=8){
+ for(let z=C.z-110;z<C.z+110;z+=8){
    let a=proj(-5.35,z),b=proj(-3.7,z);
    if(a&&b)line([a,b],"#aaa59b",.7);
    a=proj(3.7,z);b=proj(5.35,z);
@@ -226,16 +226,30 @@ function pole(x,z){
  line([a,b],"#555b5d",Math.max(2,a.s*.028));
  let cap=proj(x,z,5.65);if(cap){ctx.fillStyle="#4e5354";ctx.fillRect(cap.x-cap.s*.2,cap.y-cap.s*.025,cap.s*.4,Math.max(2,cap.s*.05))}
 }
-function render(){
- ground();
- const list=[];
- houses.forEach(h=>{let q=proj(h.x,h.z,0);if(q)list.push([q.d,()=>house(h)])});
- trees.forEach(v=>{let q=proj(v[0],v[1],0);if(q)list.push([q.d,()=>tree(v[0],v[1])])});
- poles.forEach(v=>{let q=proj(v[0],v[1],0);if(q)list.push([q.d,()=>pole(v[0],v[1])])});
- list.sort((a,b)=>b[0]-a[0]);list.forEach(v=>v[1]());
+const renderObjects=[];
+for(const h of houses)renderObjects.push({type:0,ref:h,x:h.x,z:h.z,d:0});
+for(const v of trees)renderObjects.push({type:1,ref:v,x:v[0],z:v[1],d:0});
+for(const v of poles)renderObjects.push({type:2,ref:v,x:v[0],z:v[1],d:0});
+let renderLast=0;
+function render(t){
+ if(t-renderLast>=33){
+   renderLast=t;
+   ground();
+   for(const o of renderObjects){
+     const q=proj(o.x,o.z,0);
+     o.d=q?q.d:-Infinity;
+   }
+   renderObjects.sort((a,b)=>b.d-a.d);
+   for(const o of renderObjects){
+     if(o.d===-Infinity)continue;
+     if(o.type===0)house(o.ref);
+     else if(o.type===1)tree(o.ref[0],o.ref[1]);
+     else pole(o.ref[0],o.ref[1]);
+   }
+ }
  requestAnimationFrame(render);
 }
-render();
+requestAnimationFrame(render);
 
 const joy=document.getElementById("joy"),knob=document.getElementById("knob");
 function moveJoy(e){const r=joy.getBoundingClientRect();let x=e.clientX-r.left-r.width/2,y=e.clientY-r.top-r.height/2,m=43,n=Math.hypot(x,y);if(n>m){x=x/n*m;y=y/n*m}jx=x/m;jy=y/m;knob.style.transform="translate("+x+"px,"+y+"px)"}
