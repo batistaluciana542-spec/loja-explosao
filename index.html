@@ -31,7 +31,18 @@ const poles=[[-4.0,4],[-4.0,19],[-4.0,34],[-4.0,49],[4.0,12],[4.0,28],[4.0,44],[
 
 function shade(hex,n){let v=parseInt(hex.slice(1),16),r=Math.max(0,Math.min(255,(v>>16)+n)),g=Math.max(0,Math.min(255,((v>>8)&255)+n)),b=Math.max(0,Math.min(255,(v&255)+n));return "#"+[r,g,b].map(x=>x.toString(16).padStart(2,"0")).join("")}
 function cam(x,z){let dx=x-C.x,dz=z-C.z,co=Math.cos(C.yaw),si=Math.sin(C.yaw);return{f:dx*si+dz*co,s:dx*co-dz*si}}
-function proj(x,z,h=0){let q=cam(x,z);if(q.f<.35)return null;let focal=Math.min(W,H)*.92,scale=focal/q.f;return{x:W/2+q.s*scale,y:H*.53+C.pitch*H-h*scale,s:scale,d:q.f}}
+function proj(x,z,h=0){
+ let q=cam(x,z);
+ if(q.f<.35)return null;
+ const focal=Math.min(W,H)*.92;
+ const pitchF=Math.sin(C.pitch)*focal;
+ const pitchC=Math.cos(C.pitch);
+ const vertical=(h)*pitchC-q.f*Math.sin(C.pitch);
+ const depth=q.f*pitchC+h*Math.sin(C.pitch);
+ if(depth<=.25)return null;
+ const scale=focal/depth;
+ return{x:W/2+q.s*scale,y:H*.53-vertical*scale,s:scale,d:q.f};
+}
 function poly(points,fill){if(points.some(p=>!p))return;ctx.fillStyle=fill;ctx.beginPath();ctx.moveTo(points[0].x,points[0].y);for(let i=1;i<points.length;i++)ctx.lineTo(points[i].x,points[i].y);ctx.closePath();ctx.fill()}
 function line(points,stroke,width=1){if(points.some(p=>!p))return;ctx.strokeStyle=stroke;ctx.lineWidth=width;ctx.beginPath();ctx.moveTo(points[0].x,points[0].y);for(let i=1;i<points.length;i++)ctx.lineTo(points[i].x,points[i].y);ctx.stroke()}
 
@@ -40,7 +51,7 @@ function line(points,stroke,width=1){if(points.some(p=>!p))return;ctx.strokeStyl
    como superfícies independentes, sempre abaixo do horizonte. */
 function ground(){
  ctx.fillStyle="#9bd0ea";ctx.fillRect(0,0,W,H);
- const horizon=Math.max(0,Math.min(H,H*.53+C.pitch*H));
+ const horizon=Math.max(0,Math.min(H,H*.53+Math.sin(C.pitch)*Math.min(W,H)*.92));
  ctx.fillStyle="#86a66b";ctx.fillRect(0,horizon,W,H-horizon);
 
  const strips=[[-5.4,-3.65,"#c5beb2"],[-3.65,3.65,"#55575a"],[3.65,5.4,"#c5beb2"]];
@@ -130,7 +141,7 @@ function stopJoy(){jx=0;jy=0;knob.style.transform="translate(0,0)"}joy.onpointer
 
 const look=document.getElementById("look");
 look.onpointerdown=e=>{look.setPointerCapture(e.pointerId);drag=true;lx=e.clientX;ly=e.clientY};
-look.onpointermove=e=>{if(!drag)return;C.yaw-=(e.clientX-lx)*.004;C.pitch=Math.max(-.13,Math.min(.13,C.pitch-(e.clientY-ly)*.002));lx=e.clientX;ly=e.clientY};
+look.onpointermove=e=>{if(!drag)return;C.yaw-=(e.clientX-lx)*.004;C.pitch=Math.max(-.065,Math.min(.065,C.pitch-(e.clientY-ly)*.0012));lx=e.clientX;ly=e.clientY};
 look.onpointerup=look.onpointercancel=()=>drag=false;
 
 function update(t){const dt=Math.min(.035,(t-last)/1000);last=t;const speed=4.2,f=-jy*speed*dt,s=jx*speed*dt;C.x+=Math.sin(C.yaw)*f+Math.cos(C.yaw)*s;C.z+=Math.cos(C.yaw)*f-Math.sin(C.yaw)*s;C.x=Math.max(-2.45,Math.min(2.45,C.x));C.z=Math.max(-20,Math.min(160,C.z));requestAnimationFrame(update)}requestAnimationFrame(update);
