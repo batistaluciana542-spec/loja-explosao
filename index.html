@@ -228,7 +228,7 @@ function stopJoy(){jx=0;jy=0;knob.style.transform="translate(0,0)"}joy.onpointer
 
 const look=document.getElementById("look");
 look.onpointerdown=e=>{look.setPointerCapture(e.pointerId);drag=true;lx=e.clientX;ly=e.clientY};
-look.onpointermove=e=>{if(!drag)return;C.yaw-=(e.clientX-lx)*.004;C.pitch=Math.max(-.065,Math.min(.065,C.pitch-(e.clientY-ly)*.0012));lx=e.clientX;ly=e.clientY};
+look.onpointermove=e=>{if(!drag)return;C.yaw+=(e.clientX-lx)*.004;C.pitch=Math.max(-.065,Math.min(.065,C.pitch-(e.clientY-ly)*.0012));lx=e.clientX;ly=e.clientY};
 look.onpointerup=look.onpointercancel=()=>drag=false;
 
 function update(t){const dt=Math.min(.035,(t-last)/1000);last=t;const speed=4.2,f=-jy*speed*dt,s=jx*speed*dt;C.x+=Math.sin(C.yaw)*f+Math.cos(C.yaw)*s;C.z+=Math.cos(C.yaw)*f-Math.sin(C.yaw)*s;C.x=Math.max(-5.28,Math.min(5.28,C.x));C.z=Math.max(-20,Math.min(160,C.z));requestAnimationFrame(update)}requestAnimationFrame(update);
