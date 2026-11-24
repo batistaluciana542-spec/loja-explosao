@@ -81,33 +81,21 @@ function ground(){
 function house(h){
  const x1=h.x-h.w/2,x2=h.x+h.w/2,z1=h.z-h.d/2,z2=h.z+h.d/2;
  const Hh=h.h, rh=Hh+.65;
-
- // Todas as faces são calculadas como quadriláteros independentes.
- // Não há polígonos de "telhado" atravessando a casa.
  const p00=proj(x1,z1,0),p10=proj(x2,z1,0),p11=proj(x2,z2,0),p01=proj(x1,z2,0);
  const t00=proj(x1,z1,Hh),t10=proj(x2,z1,Hh),t11=proj(x2,z2,Hh),t01=proj(x1,z2,Hh);
  const rf=proj(h.x,z1,rh),rb=proj(h.x,z2,rh);
  if(!p00||!p10||!p11||!p01||!t00||!t10||!t11||!t01||!rf||!rb)return;
-
- // Caixa principal fechada.
  poly([p00,p10,t10,t00],h.wall);
  poly([p10,p11,t11,t10],h.side);
  poly([p11,p01,t01,t11],shade(h.side,-12));
  poly([p01,p00,t00,t01],shade(h.wall,-18));
-
- // Frontão e fundo do telhado. Só três faces, sem cruzamentos.
  poly([t00,t10,rf],shade(h.wall,-8));
  poly([t10,t11,rb,rf],h.roof);
  poly([t11,t01,rb],shade(h.roof,-15));
  poly([t01,t00,rf,rb],shade(h.roof,-6));
-
- // Beiral frontal fino.
  const b0=proj(x1-.08,z1-.10,Hh+.03),b1=proj(x2+.08,z1-.10,Hh+.03);
  const b2=proj(x2+.08,z1-.10,Hh-.08),b3=proj(x1-.08,z1-.10,Hh-.08);
  poly([b0,b1,b2,b3],shade(h.roof,-18));
-
- // Elementos da fachada são desenhados como retângulos de tela,
- // presos ao plano frontal e sem alterar a geometria da casa.
  function rectAt(x,z,y,w,hgt,fill,stroke){
    const q=proj(x,z-.035,y); if(!q)return;
    const ww=q.s*w,hh=q.s*hgt;
@@ -117,8 +105,6 @@ function house(h){
  rectAt(h.x-.65,z1,1.15,.72,1.55,h.door,"#392b25");
  rectAt(h.x+.72,z1,1.95,1.05,.72,h.win,"#536b70");
  rectAt(h.x-.70,z1,2.0,.72,.65,h.win,"#536b70");
-
- // Divisões das janelas.
  for(const off of [-.70,.72]){
    const q=proj(h.x+off,z1-.04,1.98);
    if(!q)continue;
@@ -126,8 +112,6 @@ function house(h){
    line([{x:q.x,y:q.y-hh/2},{x:q.x,y:q.y+hh/2}], "#65777a",Math.max(1,q.s*.008));
    line([{x:q.x-ww/2,y:q.y},{x:q.x+ww/2,y:q.y}], "#65777a",Math.max(1,q.s*.008));
  }
-
- // Portão baixo separado da parede, apenas na frente.
  const g=proj(h.x+1.65,z1-.045,.82);
  if(g){
    const gw=g.s*.85,gh=g.s*.82;
@@ -140,8 +124,6 @@ function house(h){
      line([{x:xx,y:g.y-gh/2},{x:xx,y:g.y+gh/2}],"#81796f",Math.max(1,g.s*.006));
    }
  }
-
- // Muro frontal em duas partes, com abertura central.
  const mz=z1-.62,mh=.52;
  function wallSeg(a,b){
    const q1=proj(a,mz,0),q2=proj(b,mz,0),q3=proj(b,mz,mh),q4=proj(a,mz,mh);
