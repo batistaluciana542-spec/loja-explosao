@@ -17,14 +17,14 @@ const C={x:0,z:-1,yaw:0,pitch:0,cameraH:2.35};
 let jx=0,jy=0,drag=false,lx=0,ly=0,last=performance.now();
 
 const houses=[
- {x:-7,z:8,w:5.8,d:7.2,h:3.15,wall:"#d9c3a7",side:"#b99a78",roof:"#7a4b36",door:"#5a382b",win:"#9fc8d1",trim:"#eee4d4",gate:"#5b5148",style:0},
- {x:-7,z:21,w:6.1,d:7.6,h:3.25,wall:"#e1b2a7",side:"#b97f78",roof:"#684033",door:"#56342c",win:"#a7cbd0",trim:"#f2ded7",gate:"#5c514b",style:1},
- {x:-7,z:35,w:5.9,d:7.1,h:3.2,wall:"#e5e0d7",side:"#c3beb4",roof:"#66544b",door:"#514039",win:"#9fc5cb",trim:"#ffffff",gate:"#77716a",style:2},
- {x:-7,z:49,w:6.2,d:7.5,h:3.15,wall:"#d5b898",side:"#b08f6d",roof:"#704632",door:"#52362b",win:"#a6c8cc",trim:"#eee0c8",gate:"#5d5146",style:3},
- {x:7,z:10,w:5.8,d:7.2,h:3.15,wall:"#dfd2b7",side:"#bbaa89",roof:"#704634",door:"#50362d",win:"#9fc5ca",trim:"#f5ead5",gate:"#62584d",style:1},
- {x:7,z:24,w:6.1,d:7.6,h:3.25,wall:"#d7a27d",side:"#b57d5f",roof:"#674334",door:"#50352b",win:"#a2c9cf",trim:"#f0d9c3",gate:"#5b5048",style:0},
- {x:7,z:38,w:5.9,d:7.1,h:3.2,wall:"#dedbd3",side:"#bbb8b0",roof:"#695148",door:"#504039",win:"#a1c7cd",trim:"#f5f2eb",gate:"#6e6962",style:2},
- {x:7,z:52,w:6.2,d:7.5,h:3.15,wall:"#d8b58f",side:"#b18c6c",roof:"#6c4434",door:"#51362c",win:"#a7c9ce",trim:"#f0dfca",gate:"#5e5248",style:3}
+ {x:-9,z:8,w:5.8,d:7.2,h:3.15,wall:"#d9c3a7",side:"#b99a78",roof:"#7a4b36",door:"#5a382b",win:"#9fc8d1",trim:"#eee4d4",gate:"#5b5148",style:0},
+ {x:-9,z:21,w:6.1,d:7.6,h:3.25,wall:"#e1b2a7",side:"#b97f78",roof:"#684033",door:"#56342c",win:"#a7cbd0",trim:"#f2ded7",gate:"#5c514b",style:1},
+ {x:-9,z:35,w:5.9,d:7.1,h:3.2,wall:"#e5e0d7",side:"#c3beb4",roof:"#66544b",door:"#514039",win:"#9fc5cb",trim:"#ffffff",gate:"#77716a",style:2},
+ {x:-9,z:49,w:6.2,d:7.5,h:3.15,wall:"#d5b898",side:"#b08f6d",roof:"#704632",door:"#52362b",win:"#a6c8cc",trim:"#eee0c8",gate:"#5d5146",style:3},
+ {x:9,z:10,w:5.8,d:7.2,h:3.15,wall:"#dfd2b7",side:"#bbaa89",roof:"#704634",door:"#50362d",win:"#9fc5ca",trim:"#f5ead5",gate:"#62584d",style:1},
+ {x:9,z:24,w:6.1,d:7.6,h:3.25,wall:"#d7a27d",side:"#b57d5f",roof:"#674334",door:"#50352b",win:"#a2c9cf",trim:"#f0d9c3",gate:"#5b5048",style:0},
+ {x:9,z:38,w:5.9,d:7.1,h:3.2,wall:"#dedbd3",side:"#bbb8b0",roof:"#695148",door:"#504039",win:"#a1c7cd",trim:"#f5f2eb",gate:"#6e6962",style:2},
+ {x:9,z:52,w:6.2,d:7.5,h:3.15,wall:"#d8b58f",side:"#b18c6c",roof:"#6c4434",door:"#51362c",win:"#a7c9ce",trim:"#f0dfca",gate:"#5e5248",style:3}
 ];
 const trees=[[-4.7,6],[-4.7,17],[-4.7,29],[-4.7,42],[-4.7,55],[4.7,12],[4.7,26],[4.7,40],[4.7,54]];
 const poles=[[-4.0,4],[-4.0,19],[-4.0,34],[-4.0,49],[4.0,12],[4.0,28],[4.0,44],[4.0,59]];
@@ -193,5 +193,5 @@ look.onpointerdown=e=>{look.setPointerCapture(e.pointerId);drag=true;lx=e.client
 look.onpointermove=e=>{if(!drag)return;C.yaw-=(e.clientX-lx)*.004;C.pitch=Math.max(-.065,Math.min(.065,C.pitch-(e.clientY-ly)*.0012));lx=e.clientX;ly=e.clientY};
 look.onpointerup=look.onpointercancel=()=>drag=false;
 
-function update(t){const dt=Math.min(.035,(t-last)/1000);last=t;const speed=4.2,f=-jy*speed*dt,s=jx*speed*dt;C.x+=Math.sin(C.yaw)*f+Math.cos(C.yaw)*s;C.z+=Math.cos(C.yaw)*f-Math.sin(C.yaw)*s;C.x=Math.max(-2.45,Math.min(2.45,C.x));C.z=Math.max(-20,Math.min(160,C.z));requestAnimationFrame(update)}requestAnimationFrame(update);
+function update(t){const dt=Math.min(.035,(t-last)/1000);last=t;const speed=4.2,f=-jy*speed*dt,s=jx*speed*dt;C.x+=Math.sin(C.yaw)*f+Math.cos(C.yaw)*s;C.z+=Math.cos(C.yaw)*f-Math.sin(C.yaw)*s;C.x=Math.max(-5.15,Math.min(5.15,C.x));C.z=Math.max(-20,Math.min(160,C.z));requestAnimationFrame(update)}requestAnimationFrame(update);
 </script></body></html>
