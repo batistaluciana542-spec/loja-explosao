@@ -118,16 +118,9 @@ function house(h){
   {ids:[0,1,5,4],fill:h.wall},
   {ids:[1,2,6,5],fill:h.side},
   {ids:[2,3,7,6],fill:shade(h.side,-22)},
-  {ids:[3,0,4,7],fill:shade(h.side,-16)},
-  // Telhado dividido em faces independentes e ordenado junto com a casa.
-  // Cada água mantém volume e não desaparece quando a câmera fica de frente.
-  {ids:[4,5,8],fill:shade(h.roof,4)},
-  {ids:[5,6,9,8],fill:h.roof},
-  {ids:[6,7,9],fill:shade(h.roof,-10)},
-  {ids:[7,4,8],fill:shade(h.roof,-14)}
+  {ids:[3,0,4,7],fill:shade(h.side,-16)}
  ];
 
- // Painter's algorithm por face, sempre desenhando todas as faces.
  faces.sort((a,b)=>{
    let da=0,db=0;
    for(const id of a.ids)da+=p[id].d;
@@ -135,6 +128,32 @@ function house(h){
    return db/a.ids.length-da/b.ids.length;
  });
  for(const f of faces)poly(f.ids.map(id=>p[id]),f.fill);
+
+ // PROJEÇÃO PRÓPRIA DO TETO
+ // O telhado não usa mais a projeção das paredes. Cada vértice é
+ // projetado separadamente e as águas são ordenadas pela profundidade.
+ function roofPoint(x,z,hv){
+   const q=cam(x,z);
+   const focal=Math.min(W,H)*.92;
+   const pc=Math.cos(C.pitch);
+   const safeF=Math.max(q.f,.36);
+   const vertical=(hv-C.cameraH)*pc-q.f*Math.sin(C.pitch);
+   const depth=Math.max(safeF*pc+hv*Math.sin(C.pitch),.26);
+   const scale=focal/depth;
+   return{x:W/2+q.s*scale,y:H*.53-vertical*scale,s:scale,d:q.f};
+ }
+ const roofFaces=[
+   {pts:[roofPoint(x1,z1,Hh),roofPoint(x2,z1,Hh),roofPoint(h.x,z1,roofH)],fill:shade(h.roof,4)},
+   {pts:[roofPoint(h.x,z1,roofH),roofPoint(x2,z1,Hh),roofPoint(x2,z2,Hh),roofPoint(h.x,z2,roofH)],fill:h.roof},
+   {pts:[roofPoint(h.x,z2,roofH),roofPoint(x2,z2,Hh),roofPoint(x1,z2,Hh)],fill:shade(h.roof,-10)},
+   {pts:[roofPoint(x1,z2,Hh),roofPoint(h.x,z2,roofH),roofPoint(h.x,z1,roofH),roofPoint(x1,z1,Hh)],fill:shade(h.roof,-14)}
+ ];
+ roofFaces.sort((a,b)=>{
+   const da=a.pts.reduce((s,v)=>s+v.d,0)/a.pts.length;
+   const db=b.pts.reduce((s,v)=>s+v.d,0)/b.pts.length;
+   return db-da;
+ });
+ for(const f of roofFaces)poly(f.pts,f.fill);
 
  // Fachada mais próxima. Os detalhes também usam hp(), então não
  // desaparecem quando uma quina passa perto do plano da câmera.
