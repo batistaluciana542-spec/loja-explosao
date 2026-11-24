@@ -71,7 +71,7 @@ water:new THREE.MeshStandardMaterial({color:0x258fd0,transparent:true,opacity:.6
 glow:new THREE.MeshStandardMaterial({color:0x9b5cff,emissive:0x7b28ff,emissiveIntensity:2}),
 player:new THREE.MeshStandardMaterial({color:0x4ceaff,roughness:.45}),
 };
-const cube=new THREE.BoxGeometry(1,1,1), blocks=[], blockMap=new Map();
+const seed=Math.floor(Math.random()*1000000);\nconst cube=new THREE.BoxGeometry(1,1,1), blocks=[], blockMap=new Map();
 const key=(x,y,z)=>x+','+y+','+z;
 function addBlock(x,y,z,type,breakable=true){
  const m=new THREE.Mesh(cube,mats[type]||mats.stone);m.position.set(x+.5,y+.5,z+.5);m.castShadow=true;m.receiveShadow=true;m.userData={x,y,z,type,breakable};
