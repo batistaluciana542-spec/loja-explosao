@@ -76,7 +76,7 @@ function draw(){
  ctx.fillStyle='#8fc7ee';ctx.fillRect(0,0,W,H);
  // céu/chão
  ctx.fillStyle='#83bfe5';ctx.fillRect(0,0,W,H*.52);
- ctx.fillStyle='#777';ctx.fillRect(0,H*.52,W,H*.48);
+ ctx.fillStyle='#777';ctx.fillRect(0,H*.52,W,H*.48);ctx.fillStyle='#fff';ctx.font='bold 16px Arial';ctx.fillText('RUA 3D • MOTOR LOCAL ATIVO',18,48);
  // estrada
  const p1=project(-6,0,-80),p2=project(6,0,-80),p3=project(6,0,80),p4=project(-6,0,80);
  if(p1&&p2&&p3&&p4)poly([p1,p2,p3,p4],'#4d4d4d');
