@@ -202,6 +202,33 @@ for(let z=-75;z<80;z+=8){
 }
 
 // Casas modeladas individualmente, cada fachada com proporções, portão, janela e detalhes próprios.
+function individualHouse(i,x,z,side){
+  const specs=[
+    {w:7.4,depth:5.0,h:3.35,wall:M.cream,gateM:M.darkGate,roofM:M.white,gateX:-.15,style:0},
+    {w:6.8,depth:5.4,h:3.05,wall:M.white,gateM:M.metal,roofM:M.gray,gateX:.25,style:1},
+    {w:7.7,depth:4.8,h:3.7,wall:M.salmon,gateM:M.darkGate,roofM:M.roofDark,gateX:-.35,style:2},
+    {w:6.9,depth:5.8,h:3.2,wall:M.gray,gateM:M.metal,roofM:M.white,gateX:.35,style:0},
+    {w:7.6,depth:5.1,h:3.45,wall:M.pink,gateM:M.darkGate,roofM:M.tile,gateX:0,style:1},
+    {w:6.6,depth:5.6,h:3.0,wall:M.blue,gateM:M.metal,roofM:M.gray,gateX:-.2,style:2}
+  ];
+  const s=specs[i%specs.length];
+  detailedHouse({...s,x,z,windows:true});
+  // Entrada/recuo individual, para evitar fachadas todas iguais.
+  const front=z-s.depth/2-.22;
+  if(i%3===0){
+    box(s.w*.75,.06,1.15,x,.18,front-.55,M.curb);
+  }else if(i%3===1){
+    box(1.8,.08,1.5,x+s.w*.22,.2,front-.72,M.concrete);
+  }else{
+    box(2.6,.07,.9,x-s.w*.18,.19,front-.45,M.tile);
+  }
+  // Pequeno detalhe de fachada variando por casa.
+  if(i%2===0){
+    box(.55,.7,.08,x-s.w*.38,1.05,front-.16,M.metal);
+  }else{
+    box(.8,.18,.08,x+s.w*.32,2.65,front-.16,M.white);
+  }
+}
 const leftZ=[-11,0,11,23,36,50];
 const rightZ=[-11,0,11,23,36,50];
 leftZ.forEach((z,i)=>individualHouse(i,-9.4,z,'L'));
